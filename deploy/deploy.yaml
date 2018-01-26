@@ -1,0 +1,25 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: replay-apiserver
+  namespace: replay
+  labels:
+    apiserver: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      apiserver: "true"
+  template:
+    metadata:
+      labels:
+        apiserver: "true"
+    spec:
+      serviceAccountName: apiserver
+      containers:
+      - name: replay-apiserver
+        image: lwolf/kube-replay:latest
+        imagePullPolicy: Always
+        command: [ "/kube-replay", "--etcd-servers=http://localhost:2379" ]
+      - name: etcd
+        image: quay.io/coreos/etcd:v3.1.10

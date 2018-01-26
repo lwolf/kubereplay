@@ -1,0 +1,13 @@
+apiVersion: "kubereplay.lwolf.org/v1alpha1"
+kind: Harvester
+metadata:
+  name: my-test-harvester
+spec:
+  # Set percentage of instances to capture traffic, from 0 to 1
+  # 1 represents all instances
+  segmentSize: 1
+  # Select instances based on selector
+  selector:
+    app: echoserver
+  # Name of the silo to send traffic to
+  silo: my-test-silo
