@@ -43,4 +43,6 @@ Temporary Items
 .apdisk
 examples
 vendor
-
+bin/
+examples/
+.idea
