@@ -25,60 +25,25 @@ type RefineryList struct {
 }
 
 type RefinerySpec struct {
-	Workers int            `json:"workers"`
-	Timeout string         `json:"timeout"`
-	Output  RefineryOutput `json:"output"`
+	Workers int             `json:"workers"`
+	Timeout string          `json:"timeout"`
+	Storage RefineryStorage `json:"output"`
 }
 
-type RefineryOutput struct {
-	File          FileOutput          `json:"file,omitempty"`
-	Tcp           TcpOutput           `json:"tcp,omitempty"`
-	Stdout        StdoutOutput        `json:"stdout,omitempty"`
-	Http          HttpOutput          `json:"http,omitempty"`
-	Elasticsearch ElasticsearchOutput `json:"elasticsearch,omitempty"`
-	Kafka         KafkaOutput         `json:"kafka,omitempty"`
+type RefineryStorage struct {
+	File          FileSilo          `json:"file,omitempty"`
+	Tcp           TcpSilo           `json:"tcp,omitempty"`
+	Stdout        StdoutSilo        `json:"stdout,omitempty"`
+	Http          HttpSilo          `json:"http,omitempty"`
+	Elasticsearch ElasticsearchSilo `json:"elasticsearch,omitempty"`
+	Kafka         KafkaSilo         `json:"kafka,omitempty"`
 }
 
 type RefineryStatus struct {
 	Deployed bool `json:"deployed"`
 }
 
-// +genclient
-// +k8s:openapi-gen=true
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-type Silo struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata"`
-
-	Spec   SiloSpec   `json:"spec"`
-	Status SiloStatus `json:"status"`
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-type SiloList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-
-	Items []Silo `json:"items"`
-}
-
-// SiloSpec is the spec for a Silo resource
-type SiloSpec struct {
-	Workers int    `json:"workers"`
-	Timeout string `json:"timeout"`
-	Output struct {
-		File          FileOutput          `json:"file,omitempty"`
-		Tcp           TcpOutput           `json:"tcp,omitempty"`
-		Stdout        StdoutOutput        `json:"stdout,omitempty"`
-		Http          HttpOutput          `json:"http,omitempty"`
-		Elasticsearch ElasticsearchOutput `json:"elasticsearch,omitempty"`
-		Kafka         KafkaOutput         `json:"kafka,omitempty"`
-	} `json:"output"`
-}
-
-type FileOutput struct {
+type FileSilo struct {
 	Enabled       bool   `json:"enabled"`
 	Filename      string `json:"filename"`
 	Append        bool   `json:"append"`
@@ -87,28 +52,28 @@ type FileOutput struct {
 	FileLimit     string `json:"filelimit"`
 }
 
-type TcpOutput struct {
+type TcpSilo struct {
 	Enabled bool   `json:"enabled"`
 	Uri     string `json:"uri"`
 }
 
-type StdoutOutput struct {
+type StdoutSilo struct {
 	Enabled bool `json:"enabled"`
 }
 
-type HttpOutput struct {
+type HttpSilo struct {
 	Enabled        bool   `json:"enabled"`
 	Uri            string `json:"uri"`
 	Debug          bool   `json:"debug"`
 	ResponseBuffer int    `json:"response_buffer"`
 }
 
-type ElasticsearchOutput struct {
+type ElasticsearchSilo struct {
 	Enabled bool   `json:"enabled"`
 	Uri     string `json:"uri"`
 }
 
-type KafkaOutput struct {
+type KafkaSilo struct {
 	Enabled bool   `json:"enabled"`
 	Uri     string `json:"uri"`
 	Json    bool   `json:"json"`
@@ -119,6 +84,7 @@ type SiloStatus struct {
 	Deployed bool `json:"deployed"`
 }
 
+// +genclient
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -133,7 +99,7 @@ type Harvester struct {
 // HarvesterSpec is the spec for a Harvester resource
 type HarvesterSpec struct {
 	Selector    string  `json:"selector"`
-	Silo        string  `json:"silo"`
+	Refinery    string  `json:"refinery"`
 	SegmentSize float32 `json:"segment"`
 }
 

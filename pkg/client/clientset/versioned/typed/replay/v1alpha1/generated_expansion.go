@@ -15,6 +15,6 @@ limitations under the License.
 */
 package v1alpha1
 
-type RefineryExpansion interface{}
+type HarvesterExpansion interface{}
 
-type SiloExpansion interface{}
+type RefineryExpansion interface{}

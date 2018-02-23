@@ -24,63 +24,26 @@ type RefineryList struct {
 	Items []Refinery
 }
 
-type RefineryOutput struct {
-	File          FileOutput
-	Tcp           TcpOutput
-	Stdout        StdoutOutput
-	Http          HttpOutput
-	Elasticsearch ElasticsearchOutput
-	Kafka         KafkaOutput
+type RefineryStorage struct {
+	File          FileSilo
+	Tcp           TcpSilo
+	Stdout        StdoutSilo
+	Http          HttpSilo
+	Elasticsearch ElasticsearchSilo
+	Kafka         KafkaSilo
 }
 
 type RefinerySpec struct {
 	Workers int
 	Timeout string
-	Output  RefineryOutput
-}
-
-type RefineryOutputTest struct {
-	Enabled bool
+	Storage RefineryStorage
 }
 
 type RefineryStatus struct {
 	Deployed bool
 }
 
-// +genclient
-// +k8s:openapi-gen=true
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-type Silo struct {
-	metav1.TypeMeta
-	metav1.ObjectMeta
-	Spec   SiloSpec
-	Status SiloStatus
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-type SiloList struct {
-	metav1.TypeMeta
-	metav1.ListMeta
-
-	Items []Silo
-}
-
-type SiloSpec struct {
-	Workers int
-	Timeout string
-	Output struct {
-		File          FileOutput
-		Tcp           TcpOutput
-		Stdout        StdoutOutput
-		Http          HttpOutput
-		Elasticsearch ElasticsearchOutput
-		Kafka         KafkaOutput
-	}
-}
-
-type FileOutput struct {
+type FileSilo struct {
 	Enabled       bool
 	Filename      string
 	Append        bool
@@ -88,24 +51,24 @@ type FileOutput struct {
 	QueueSize     int
 	FileLimit     string
 }
-type TcpOutput struct {
+type TcpSilo struct {
 	Enabled bool
 	Uri     string
 }
-type StdoutOutput struct {
+type StdoutSilo struct {
 	Enabled bool
 }
-type HttpOutput struct {
+type HttpSilo struct {
 	Enabled        bool
 	Uri            string
 	Debug          bool
 	ResponseBuffer int
 }
-type ElasticsearchOutput struct {
+type ElasticsearchSilo struct {
 	Enabled bool
 	Uri     string
 }
-type KafkaOutput struct {
+type KafkaSilo struct {
 	Enabled bool
 	Uri     string
 	Json    bool
@@ -117,6 +80,7 @@ type SiloStatus struct {
 }
 
 // +genclient
+// +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type Harvester struct {
@@ -128,7 +92,7 @@ type Harvester struct {
 
 type HarvesterSpec struct {
 	Selector    string
-	Silo        string
+	Refinery    string
 	SegmentSize float32
 }
 

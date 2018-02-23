@@ -18,6 +18,14 @@ limitations under the License.
 
 package v1alpha1
 
+// HarvesterListerExpansion allows custom methods to be added to
+// HarvesterLister.
+type HarvesterListerExpansion interface{}
+
+// HarvesterNamespaceListerExpansion allows custom methods to be added to
+// HarvesterNamespaceLister.
+type HarvesterNamespaceListerExpansion interface{}
+
 // RefineryListerExpansion allows custom methods to be added to
 // RefineryLister.
 type RefineryListerExpansion interface{}
@@ -25,11 +33,3 @@ type RefineryListerExpansion interface{}
 // RefineryNamespaceListerExpansion allows custom methods to be added to
 // RefineryNamespaceLister.
 type RefineryNamespaceListerExpansion interface{}
-
-// SiloListerExpansion allows custom methods to be added to
-// SiloLister.
-type SiloListerExpansion interface{}
-
-// SiloNamespaceListerExpansion allows custom methods to be added to
-// SiloNamespaceLister.
-type SiloNamespaceListerExpansion interface{}

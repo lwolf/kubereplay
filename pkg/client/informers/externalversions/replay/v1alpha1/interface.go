@@ -24,10 +24,10 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// Harvesters returns a HarvesterInformer.
+	Harvesters() HarvesterInformer
 	// Refineries returns a RefineryInformer.
 	Refineries() RefineryInformer
-	// Silos returns a SiloInformer.
-	Silos() SiloInformer
 }
 
 type version struct {
@@ -41,12 +41,12 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
+// Harvesters returns a HarvesterInformer.
+func (v *version) Harvesters() HarvesterInformer {
+	return &harvesterInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // Refineries returns a RefineryInformer.
 func (v *version) Refineries() RefineryInformer {
 	return &refineryInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// Silos returns a SiloInformer.
-func (v *version) Silos() SiloInformer {
-	return &siloInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

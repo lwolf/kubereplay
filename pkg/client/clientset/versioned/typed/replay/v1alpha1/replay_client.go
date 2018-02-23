@@ -24,8 +24,8 @@ import (
 
 type KubereplayV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	HarvestersGetter
 	RefineriesGetter
-	SilosGetter
 }
 
 // KubereplayV1alpha1Client is used to interact with features provided by the kubereplay.lwolf.org group.
@@ -33,12 +33,12 @@ type KubereplayV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *KubereplayV1alpha1Client) Refineries(namespace string) RefineryInterface {
-	return newRefineries(c, namespace)
+func (c *KubereplayV1alpha1Client) Harvesters(namespace string) HarvesterInterface {
+	return newHarvesters(c, namespace)
 }
 
-func (c *KubereplayV1alpha1Client) Silos(namespace string) SiloInterface {
-	return newSilos(c, namespace)
+func (c *KubereplayV1alpha1Client) Refineries(namespace string) RefineryInterface {
+	return newRefineries(c, namespace)
 }
 
 // NewForConfig creates a new KubereplayV1alpha1Client for the given config.

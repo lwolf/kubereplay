@@ -1,4 +1,4 @@
-package utils
+package refinery
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func fileOutputToArgs(spec *replay.FileOutput) *[]string {
+func fileSiloToArgs(spec *replay.FileSilo) *[]string {
 	var args []string
 	if spec.Filename == "" {
 		log.Fatalf("Filename is required for file output mode")
@@ -42,7 +42,7 @@ func fileOutputToArgs(spec *replay.FileOutput) *[]string {
 	return &args
 }
 
-func tcpOutputToArgs(spec *replay.TcpOutput) *[]string {
+func tcpSiloToArgs(spec *replay.TcpSilo) *[]string {
 	var args []string
 	if spec.Uri == "" {
 		log.Fatalf("Uri is required for tcp output mode")
@@ -52,13 +52,13 @@ func tcpOutputToArgs(spec *replay.TcpOutput) *[]string {
 	return &args
 }
 
-func stdoutOutputToArgs(spec *replay.StdoutOutput) *[]string {
+func stdoutSiloToArgs(spec *replay.StdoutSilo) *[]string {
 	var args []string
 	args = append(args, "--output-stdout")
 	return &args
 }
 
-func httpOutputToArgs(spec *replay.HttpOutput) *[]string {
+func httpSiloToArgs(spec *replay.HttpSilo) *[]string {
 	var args []string
 	if spec.Uri == "" {
 		log.Fatalf("Uri is required for http output mode")
@@ -78,7 +78,7 @@ func httpOutputToArgs(spec *replay.HttpOutput) *[]string {
 	return &args
 }
 
-func elasticsearchOutputToArgs(spec *replay.ElasticsearchOutput) *[]string {
+func elasticsearchSiloToArgs(spec *replay.ElasticsearchSilo) *[]string {
 	var args []string
 	if spec.Uri == "" {
 		log.Fatalf("Uri is required for elasticsearch output mode")
@@ -89,7 +89,7 @@ func elasticsearchOutputToArgs(spec *replay.ElasticsearchOutput) *[]string {
 	return &args
 }
 
-func kafkaOutputToArgs(spec *replay.KafkaOutput) *[]string {
+func kafkaSiloToArgs(spec *replay.KafkaSilo) *[]string {
 	var args []string
 	if spec.Uri == "" {
 		log.Fatalf("Uri is required for kafka output mode")
@@ -116,36 +116,39 @@ func mergeArgs(newArgs []string, args []string) []string {
 	return args
 }
 
-func CreateDeployment(siloName string, spec *replay.RefinerySpec) *appsv1.Deployment {
+func GenerateDeployment(siloName string, spec *replay.RefinerySpec) *appsv1.Deployment {
 
 	var args []string
+	// Confugure input arguments
+	args = append(args, "--input-tcp")
+	args = append(args, ":28020")
 
-	if spec.Output.File.Enabled == true {
-		fileArgs := fileOutputToArgs(&spec.Output.File)
+	if spec.Storage.File.Enabled == true {
+		fileArgs := fileSiloToArgs(&spec.Storage.File)
 		args = mergeArgs(*fileArgs, args)
 	}
-	if spec.Output.Tcp.Enabled == true {
-		tcpArgs := tcpOutputToArgs(&spec.Output.Tcp)
+	if spec.Storage.Tcp.Enabled == true {
+		tcpArgs := tcpSiloToArgs(&spec.Storage.Tcp)
 		args = mergeArgs(*tcpArgs, args)
 	}
 
-	if spec.Output.Stdout.Enabled == true {
-		stdoutArgs := stdoutOutputToArgs(&spec.Output.Stdout)
+	if spec.Storage.Stdout.Enabled == true {
+		stdoutArgs := stdoutSiloToArgs(&spec.Storage.Stdout)
 		args = mergeArgs(*stdoutArgs, args)
 	}
 
-	if spec.Output.Http.Enabled == true {
-		httpArgs := httpOutputToArgs(&spec.Output.Http)
+	if spec.Storage.Http.Enabled == true {
+		httpArgs := httpSiloToArgs(&spec.Storage.Http)
 		args = mergeArgs(*httpArgs, args)
 	}
 
-	if spec.Output.Elasticsearch.Enabled == true {
-		elasticsearchArgs := elasticsearchOutputToArgs(&spec.Output.Elasticsearch)
+	if spec.Storage.Elasticsearch.Enabled == true {
+		elasticsearchArgs := elasticsearchSiloToArgs(&spec.Storage.Elasticsearch)
 		args = mergeArgs(*elasticsearchArgs, args)
 	}
 
-	if spec.Output.Kafka.Enabled == true {
-		kafkaArgs := kafkaOutputToArgs(&spec.Output.Kafka)
+	if spec.Storage.Kafka.Enabled == true {
+		kafkaArgs := kafkaSiloToArgs(&spec.Storage.Kafka)
 		args = mergeArgs(*kafkaArgs, args)
 	}
 

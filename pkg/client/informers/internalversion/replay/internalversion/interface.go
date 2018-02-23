@@ -28,8 +28,6 @@ type Interface interface {
 	Harvesters() HarvesterInformer
 	// Refineries returns a RefineryInformer.
 	Refineries() RefineryInformer
-	// Silos returns a SiloInformer.
-	Silos() SiloInformer
 }
 
 type version struct {
@@ -51,9 +49,4 @@ func (v *version) Harvesters() HarvesterInformer {
 // Refineries returns a RefineryInformer.
 func (v *version) Refineries() RefineryInformer {
 	return &refineryInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// Silos returns a SiloInformer.
-func (v *version) Silos() SiloInformer {
-	return &siloInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

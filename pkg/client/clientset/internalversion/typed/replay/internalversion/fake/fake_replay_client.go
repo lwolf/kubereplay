@@ -33,10 +33,6 @@ func (c *FakeKubereplay) Refineries(namespace string) internalversion.RefineryIn
 	return &FakeRefineries{c, namespace}
 }
 
-func (c *FakeKubereplay) Silos(namespace string) internalversion.SiloInterface {
-	return &FakeSilos{c, namespace}
-}
-
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeKubereplay) RESTClient() rest.Interface {

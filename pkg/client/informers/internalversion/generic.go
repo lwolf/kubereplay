@@ -57,8 +57,6 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubereplay().InternalVersion().Harvesters().Informer()}, nil
 	case replay.SchemeGroupVersion.WithResource("refineries"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubereplay().InternalVersion().Refineries().Informer()}, nil
-	case replay.SchemeGroupVersion.WithResource("silos"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubereplay().InternalVersion().Silos().Informer()}, nil
 
 	}
 

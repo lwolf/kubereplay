@@ -25,12 +25,12 @@ type FakeKubereplayV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeKubereplayV1alpha1) Refineries(namespace string) v1alpha1.RefineryInterface {
-	return &FakeRefineries{c, namespace}
+func (c *FakeKubereplayV1alpha1) Harvesters(namespace string) v1alpha1.HarvesterInterface {
+	return &FakeHarvesters{c, namespace}
 }
 
-func (c *FakeKubereplayV1alpha1) Silos(namespace string) v1alpha1.SiloInterface {
-	return &FakeSilos{c, namespace}
+func (c *FakeKubereplayV1alpha1) Refineries(namespace string) v1alpha1.RefineryInterface {
+	return &FakeRefineries{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
