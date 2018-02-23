@@ -53,6 +53,8 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=kubereplay.lwolf.org, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("refineries"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubereplay().V1alpha1().Refineries().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("silos"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubereplay().V1alpha1().Silos().Informer()}, nil
 

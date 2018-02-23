@@ -29,6 +29,10 @@ func (c *FakeKubereplay) Harvesters(namespace string) internalversion.HarvesterI
 	return &FakeHarvesters{c, namespace}
 }
 
+func (c *FakeKubereplay) Refineries(namespace string) internalversion.RefineryInterface {
+	return &FakeRefineries{c, namespace}
+}
+
 func (c *FakeKubereplay) Silos(namespace string) internalversion.SiloInterface {
 	return &FakeSilos{c, namespace}
 }

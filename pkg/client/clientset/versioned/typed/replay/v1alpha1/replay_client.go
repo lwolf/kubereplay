@@ -24,12 +24,17 @@ import (
 
 type KubereplayV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	RefineriesGetter
 	SilosGetter
 }
 
 // KubereplayV1alpha1Client is used to interact with features provided by the kubereplay.lwolf.org group.
 type KubereplayV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *KubereplayV1alpha1Client) Refineries(namespace string) RefineryInterface {
+	return newRefineries(c, namespace)
 }
 
 func (c *KubereplayV1alpha1Client) Silos(namespace string) SiloInterface {

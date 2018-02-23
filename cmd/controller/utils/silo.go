@@ -1,18 +1,19 @@
 package utils
 
 import (
-	appsv1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apiv1 "k8s.io/api/core/v1"
-	"github.com/lwolf/kube-replay/pkg/apis/replay"
-	"strconv"
-	"log"
 	"fmt"
+	"log"
+	"strconv"
+
+	"github.com/lwolf/kube-replay/pkg/apis/replay"
+	appsv1 "k8s.io/api/apps/v1"
+	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func fileOutputToArgs(spec *replay.SiloFileOutput) (*[]string) {
+func fileOutputToArgs(spec *replay.FileOutput) *[]string {
 	var args []string
-	if spec.Filename == ""{
+	if spec.Filename == "" {
 		log.Fatalf("Filename is required for file output mode")
 	} else {
 		args = append(args, "--output-file")
@@ -41,7 +42,7 @@ func fileOutputToArgs(spec *replay.SiloFileOutput) (*[]string) {
 	return &args
 }
 
-func tcpOutputToArgs(spec *replay.SiloTcpOutput) (*[]string) {
+func tcpOutputToArgs(spec *replay.TcpOutput) *[]string {
 	var args []string
 	if spec.Uri == "" {
 		log.Fatalf("Uri is required for tcp output mode")
@@ -51,13 +52,13 @@ func tcpOutputToArgs(spec *replay.SiloTcpOutput) (*[]string) {
 	return &args
 }
 
-func stdoutOutputToArgs(spec *replay.SiloStdoutOutput) (*[]string) {
+func stdoutOutputToArgs(spec *replay.StdoutOutput) *[]string {
 	var args []string
 	args = append(args, "--output-stdout")
 	return &args
 }
 
-func httpOutputToArgs(spec *replay.SiloHttpOutput) (*[]string) {
+func httpOutputToArgs(spec *replay.HttpOutput) *[]string {
 	var args []string
 	if spec.Uri == "" {
 		log.Fatalf("Uri is required for http output mode")
@@ -77,7 +78,7 @@ func httpOutputToArgs(spec *replay.SiloHttpOutput) (*[]string) {
 	return &args
 }
 
-func elasticsearchOutputToArgs(spec *replay.SiloElasticsearchOutput) (*[]string) {
+func elasticsearchOutputToArgs(spec *replay.ElasticsearchOutput) *[]string {
 	var args []string
 	if spec.Uri == "" {
 		log.Fatalf("Uri is required for elasticsearch output mode")
@@ -88,7 +89,7 @@ func elasticsearchOutputToArgs(spec *replay.SiloElasticsearchOutput) (*[]string)
 	return &args
 }
 
-func kafkaOutputToArgs(spec *replay.SiloKafkaOutput) (*[]string) {
+func kafkaOutputToArgs(spec *replay.KafkaOutput) *[]string {
 	var args []string
 	if spec.Uri == "" {
 		log.Fatalf("Uri is required for kafka output mode")
@@ -108,15 +109,14 @@ func kafkaOutputToArgs(spec *replay.SiloKafkaOutput) (*[]string) {
 	return &args
 }
 
-func mergeArgs(newArgs []string, args []string) []string{
+func mergeArgs(newArgs []string, args []string) []string {
 	for _, a := range newArgs {
 		args = append(args, a)
 	}
 	return args
 }
 
-
-func CreateDeployment(siloName string, spec *replay.SiloSpec) *appsv1.Deployment {
+func CreateDeployment(siloName string, spec *replay.RefinerySpec) *appsv1.Deployment {
 
 	var args []string
 
@@ -161,10 +161,15 @@ func CreateDeployment(siloName string, spec *replay.SiloSpec) *appsv1.Deployment
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("silo-%s", siloName),
+			Name: fmt.Sprintf("refinery-%s", siloName),
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: int32Ptr(1),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": "kubereplay",
+				},
+			},
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
@@ -176,7 +181,7 @@ func CreateDeployment(siloName string, spec *replay.SiloSpec) *appsv1.Deployment
 						{
 							Name:  "replay-silo",
 							Image: "buger/goreplay:latest",
-							Args: args,
+							Args:  args,
 							Ports: []apiv1.ContainerPort{
 								{
 									Name:          "tcp",
@@ -194,6 +199,5 @@ func CreateDeployment(siloName string, spec *replay.SiloSpec) *appsv1.Deployment
 	return deployment
 
 }
-
 
 func int32Ptr(i int32) *int32 { return &i }

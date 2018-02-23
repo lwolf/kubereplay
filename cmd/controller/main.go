@@ -2,28 +2,28 @@ package main
 
 import (
 	"flag"
-	"k8s.io/client-go/util/workqueue"
 	"fmt"
 	"log"
-	"time"
 	"reflect"
-	k8sclient "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apiv1 "k8s.io/api/core/v1"
-	"github.com/lwolf/kube-replay/pkg/signals"
-	"github.com/lwolf/kube-replay/pkg/apis/replay/v1alpha1"
-	"k8s.io/client-go/util/retry"
-	client "github.com/lwolf/kube-replay/pkg/client/clientset/versioned"
-	factory "github.com/lwolf/kube-replay/pkg/client/informers/externalversions"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/apimachinery/pkg/util/runtime"
+	"time"
+
 	"github.com/lwolf/kube-replay/cmd/controller/utils"
 	"github.com/lwolf/kube-replay/pkg/apis/replay"
+	"github.com/lwolf/kube-replay/pkg/apis/replay/v1alpha1"
+	client "github.com/lwolf/kube-replay/pkg/client/clientset/versioned"
+	factory "github.com/lwolf/kube-replay/pkg/client/informers/externalversions"
+	"github.com/lwolf/kube-replay/pkg/signals"
+	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/runtime"
+	k8sclient "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/retry"
+	"k8s.io/client-go/util/workqueue"
 )
 
 var (
-
 	apiserverURL = flag.String("apiserver", "", "Optional URL used to access the Kubernetes API server")
 	// kubeconfig is the URL of the API server to connect to
 	kubeconfig = flag.String("kubeconfig", "", "Optional kubeconfig path used to access the Kubernetes API server")
@@ -48,7 +48,6 @@ var (
 
 	// kc is a Kubernetes API client for default resources
 	kc k8sclient.Interface
-
 )
 
 func main() {
@@ -83,7 +82,7 @@ func main() {
 	// create/replace/update/delete operations are missed when watching
 	sharedFactory = factory.NewSharedInformerFactory(cl, time.Second*30)
 
-	informer := sharedFactory.Kubereplay().V1alpha1().Silos().Informer()
+	informer := sharedFactory.Kubereplay().V1alpha1().Refineries().Informer()
 	// we add a new event handler, watching for changes to API resources.
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
@@ -117,27 +116,29 @@ func main() {
 
 }
 
-// sync will attempt to 'Sync' an alert resource. It checks to see if the alert
+// sync will attempt to 'Sync' an refinery resource. It checks to see if the refinery
 // has already been sent, and if not will send it and update the resource
 // accordingly. This method is called whenever this controller starts, and
 // whenever the resource changes, and also periodically every resyncPeriod.
-func sync(silo *v1alpha1.Silo) error {
-	log.Printf("Found new event about silo '%s/%s'", silo.Namespace, silo.Name)
-	// deploy new instance of goreplay for each silo without deployed status
-	if silo.Status.Deployed != true {
+func sync(r *v1alpha1.Refinery) error {
+	log.Printf("Found new event about refinery '%s/%s'", r.Namespace, r.Name)
+	// deploy new instance of goreplay for each refinery without deployed status
+	if r.Status.Deployed != true {
 		deploymentsClient := kc.AppsV1().Deployments(apiv1.NamespaceDefault)
-		var spec replay.SiloSpec
-		err := v1alpha1.Convert_v1alpha1_SiloSpec_To_replay_SiloSpec(&silo.Spec, &spec, nil)
+		var spec replay.Refinery
+		err := v1alpha1.Convert_v1alpha1_Refinery_To_replay_Refinery(r, &spec, nil)
 		if err != nil {
-			log.Fatalf("Unable to convert silo spec v1")
+			log.Printf("Unable to convert refinery spec v1")
+			return err
 		}
-		deployment := utils.CreateDeployment(silo.Name, &spec)
+		deployment := utils.CreateDeployment(r.Name, &spec.Spec)
 
 		// Create Deployment
-		log.Printf("Creating silo deployment...")
+		log.Printf("Creating refinery deployment...")
 		result, err := deploymentsClient.Create(deployment)
 		if err != nil {
-			panic(err)
+			log.Printf("Failed to create deployment: %v", err)
+			return err
 		}
 		log.Printf("Created deployment %q.\n", result.GetObjectMeta().GetName())
 
@@ -145,24 +146,26 @@ func sync(silo *v1alpha1.Silo) error {
 			// Retrieve the latest version of Deployment before attempting update
 			// RetryOnConflict uses exponential backoff to avoid exhausting the apiserver
 
-			silosClient := cl.KubereplayV1alpha1().Silos(silo.Namespace)
+			refineryClient := cl.KubereplayV1alpha1().Refineries(r.Namespace)
 
-			result, getErr := silosClient.Get(silo.Name, metav1.GetOptions{})
+			result, getErr := refineryClient.Get(r.Name, metav1.GetOptions{})
 			if getErr != nil {
-				panic(fmt.Errorf("Failed to get latest version of Silo: %v", getErr))
+				log.Fatalf("Failed to get latest version of Silo: %v", getErr)
 			}
 			result.Status.Deployed = true
-			_, updateErr := silosClient.Update(result)
+			_, updateErr := refineryClient.Update(result)
 			return updateErr
 		})
 		if retryErr != nil {
-			panic(fmt.Errorf("Update failed: %v", retryErr))
+			log.Printf("Update failed: %v", retryErr)
+			return retryErr
 		}
-		log.Printf("Updated deployment...")
+		log.Printf("Deployment updated...")
+	} else {
+		log.Println("Already processed, skipping...")
 	}
 	return nil
 }
-
 
 func work() {
 	log.Println("Starting processing the queue")
@@ -200,8 +203,8 @@ func work() {
 
 			log.Printf("Read item '%s/%s' off workqueue. Processing...", namespace, name)
 
-			// retrieve the latest version in the cache of this alert
-			obj, err := sharedFactory.Kubereplay().V1alpha1().Silos().Lister().Silos(namespace).Get(name)
+			// retrieve the latest version in the cache of this refinery
+			obj, err := sharedFactory.Kubereplay().V1alpha1().Refineries().Lister().Refineries(namespace).Get(name)
 
 			if err != nil {
 				runtime.HandleError(fmt.Errorf("error getting object '%s/%s' from api: %s", namespace, name, err.Error()))

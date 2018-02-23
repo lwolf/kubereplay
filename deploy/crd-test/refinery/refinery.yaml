@@ -1,7 +1,7 @@
 apiVersion: "kubereplay.lwolf.org/v1alpha1"
-kind: Silo
+kind: Refinery
 metadata:
-  name: my-silo
+  name: my-refinery
 spec:
   # Gor uses dynamic worker scaling by default.  Enter a number to run a set number of workers.
   # number > 0 indicates static value

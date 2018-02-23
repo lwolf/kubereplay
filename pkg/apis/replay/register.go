@@ -1,13 +1,13 @@
 package replay
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // GroupName is the group name use in this package
 const GroupName = "kubereplay.lwolf.org"
-
 
 // SchemeGroupVersion is group version used to register these objects
 var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: runtime.APIVersionInternal}
@@ -30,8 +30,12 @@ var (
 // Adds the list of known types to api.Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&Silo{},
 		&Harvester{},
+		&Refinery{},
 	)
+	scheme.AddKnownTypes(SchemeGroupVersion,
+		&metav1.Status{},
+	)
+	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
 }

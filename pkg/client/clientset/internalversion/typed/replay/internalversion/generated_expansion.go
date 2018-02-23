@@ -17,4 +17,6 @@ package internalversion
 
 type HarvesterExpansion interface{}
 
+type RefineryExpansion interface{}
+
 type SiloExpansion interface{}

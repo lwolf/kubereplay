@@ -4,7 +4,7 @@ metadata:
   name: replay-apiserver
   namespace: replay
   labels:
-    apiserver: "true"
+    component: "apiserver"
 spec:
   replicas: 1
   selector:
@@ -18,7 +18,7 @@ spec:
       serviceAccountName: apiserver
       containers:
       - name: replay-apiserver
-        image: lwolf/kube-replay:latest
+        image: lwolf/kube-replay:0.1
         imagePullPolicy: Always
         command: [ "/kube-replay", "--etcd-servers=http://localhost:2379" ]
       - name: etcd

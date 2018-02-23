@@ -28,7 +28,7 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${SCRIPT_ROOT}; ls -d -1 ./vendor/k8s.io/code-ge
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/lwolf/kube-replay/pkg/client \
   github.com/lwolf/kube-replay/pkg/apis \
-  kubereplay:v1alpha1 \
+  replay:v1alpha1 \
   --go-header-file ${SCRIPT_ROOT}/hack/boilerplate.go.txt \
   --output-base "$(dirname ${BASH_SOURCE})/../../.." \
   "$@"

@@ -8,10 +8,48 @@ import (
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Silo describes a database.
+type Refinery struct {
+	metav1.TypeMeta       `json:",inline"`
+	metav1.ObjectMeta     `json:"metadata"`
+	Spec   RefinerySpec   `json:"spec"`
+	Status RefineryStatus `json:"status"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+type RefineryList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []Refinery `json:"items"`
+}
+
+type RefinerySpec struct {
+	Workers int            `json:"workers"`
+	Timeout string         `json:"timeout"`
+	Output  RefineryOutput `json:"output"`
+}
+
+type RefineryOutput struct {
+	File          FileOutput          `json:"file,omitempty"`
+	Tcp           TcpOutput           `json:"tcp,omitempty"`
+	Stdout        StdoutOutput        `json:"stdout,omitempty"`
+	Http          HttpOutput          `json:"http,omitempty"`
+	Elasticsearch ElasticsearchOutput `json:"elasticsearch,omitempty"`
+	Kafka         KafkaOutput         `json:"kafka,omitempty"`
+}
+
+type RefineryStatus struct {
+	Deployed bool `json:"deployed"`
+}
+
+// +genclient
+// +k8s:openapi-gen=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
 type Silo struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
 	Spec   SiloSpec   `json:"spec"`
 	Status SiloStatus `json:"status"`
@@ -31,16 +69,16 @@ type SiloSpec struct {
 	Workers int    `json:"workers"`
 	Timeout string `json:"timeout"`
 	Output struct {
-		File          SiloFileOutput          `json:"file,omitempty"`
-		Tcp           SiloTcpOutput           `json:"tcp,omitempty"`
-		Stdout        SiloStdoutOutput        `json:"stdout,omitempty"`
-		Http          SiloHttpOutput          `json:"http,omitempty"`
-		Elasticsearch SiloElasticsearchOutput `json:"elasticsearch,omitempty"`
-		Kafka         SiloKafkaOutput         `json:"kafka,omitempty"`
-	}
+		File          FileOutput          `json:"file,omitempty"`
+		Tcp           TcpOutput           `json:"tcp,omitempty"`
+		Stdout        StdoutOutput        `json:"stdout,omitempty"`
+		Http          HttpOutput          `json:"http,omitempty"`
+		Elasticsearch ElasticsearchOutput `json:"elasticsearch,omitempty"`
+		Kafka         KafkaOutput         `json:"kafka,omitempty"`
+	} `json:"output"`
 }
 
-type SiloFileOutput struct {
+type FileOutput struct {
 	Enabled       bool   `json:"enabled"`
 	Filename      string `json:"filename"`
 	Append        bool   `json:"append"`
@@ -49,28 +87,28 @@ type SiloFileOutput struct {
 	FileLimit     string `json:"filelimit"`
 }
 
-type SiloTcpOutput struct {
+type TcpOutput struct {
 	Enabled bool   `json:"enabled"`
 	Uri     string `json:"uri"`
 }
 
-type SiloStdoutOutput struct {
+type StdoutOutput struct {
 	Enabled bool `json:"enabled"`
 }
 
-type SiloHttpOutput struct {
+type HttpOutput struct {
 	Enabled        bool   `json:"enabled"`
 	Uri            string `json:"uri"`
 	Debug          bool   `json:"debug"`
 	ResponseBuffer int    `json:"response_buffer"`
 }
 
-type SiloElasticsearchOutput struct {
+type ElasticsearchOutput struct {
 	Enabled bool   `json:"enabled"`
 	Uri     string `json:"uri"`
 }
 
-type SiloKafkaOutput struct {
+type KafkaOutput struct {
 	Enabled bool   `json:"enabled"`
 	Uri     string `json:"uri"`
 	Json    bool   `json:"json"`

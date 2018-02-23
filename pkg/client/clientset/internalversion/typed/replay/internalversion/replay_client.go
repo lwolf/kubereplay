@@ -23,6 +23,7 @@ import (
 type KubereplayInterface interface {
 	RESTClient() rest.Interface
 	HarvestersGetter
+	RefineriesGetter
 	SilosGetter
 }
 
@@ -33,6 +34,10 @@ type KubereplayClient struct {
 
 func (c *KubereplayClient) Harvesters(namespace string) HarvesterInterface {
 	return newHarvesters(c, namespace)
+}
+
+func (c *KubereplayClient) Refineries(namespace string) RefineryInterface {
+	return newRefineries(c, namespace)
 }
 
 func (c *KubereplayClient) Silos(namespace string) SiloInterface {

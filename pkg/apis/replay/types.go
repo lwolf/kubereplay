@@ -5,6 +5,50 @@ import (
 )
 
 // +genclient
+// +k8s:openapi-gen=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+type Refinery struct {
+	metav1.TypeMeta
+	metav1.ObjectMeta
+	Spec   RefinerySpec
+	Status RefineryStatus
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+type RefineryList struct {
+	metav1.TypeMeta
+	metav1.ListMeta
+
+	Items []Refinery
+}
+
+type RefineryOutput struct {
+	File          FileOutput
+	Tcp           TcpOutput
+	Stdout        StdoutOutput
+	Http          HttpOutput
+	Elasticsearch ElasticsearchOutput
+	Kafka         KafkaOutput
+}
+
+type RefinerySpec struct {
+	Workers int
+	Timeout string
+	Output  RefineryOutput
+}
+
+type RefineryOutputTest struct {
+	Enabled bool
+}
+
+type RefineryStatus struct {
+	Deployed bool
+}
+
+// +genclient
+// +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type Silo struct {
@@ -27,16 +71,16 @@ type SiloSpec struct {
 	Workers int
 	Timeout string
 	Output struct {
-		File          SiloFileOutput
-		Tcp           SiloTcpOutput
-		Stdout        SiloStdoutOutput
-		Http          SiloHttpOutput
-		Elasticsearch SiloElasticsearchOutput
-		Kafka         SiloKafkaOutput
+		File          FileOutput
+		Tcp           TcpOutput
+		Stdout        StdoutOutput
+		Http          HttpOutput
+		Elasticsearch ElasticsearchOutput
+		Kafka         KafkaOutput
 	}
 }
 
-type SiloFileOutput struct {
+type FileOutput struct {
 	Enabled       bool
 	Filename      string
 	Append        bool
@@ -44,24 +88,24 @@ type SiloFileOutput struct {
 	QueueSize     int
 	FileLimit     string
 }
-type SiloTcpOutput struct {
+type TcpOutput struct {
 	Enabled bool
 	Uri     string
 }
-type SiloStdoutOutput struct {
+type StdoutOutput struct {
 	Enabled bool
 }
-type SiloHttpOutput struct {
+type HttpOutput struct {
 	Enabled        bool
 	Uri            string
 	Debug          bool
 	ResponseBuffer int
 }
-type SiloElasticsearchOutput struct {
+type ElasticsearchOutput struct {
 	Enabled bool
 	Uri     string
 }
-type SiloKafkaOutput struct {
+type KafkaOutput struct {
 	Enabled bool
 	Uri     string
 	Json    bool
