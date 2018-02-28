@@ -91,7 +91,7 @@ type Harvester struct {
 }
 
 type HarvesterSpec struct {
-	Selector    string
+	Selector    map[string]string
 	Refinery    string
 	SegmentSize float32
 }

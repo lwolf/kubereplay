@@ -9,10 +9,10 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type Refinery struct {
-	metav1.TypeMeta       `json:",inline"`
-	metav1.ObjectMeta     `json:"metadata"`
-	Spec   RefinerySpec   `json:"spec"`
-	Status RefineryStatus `json:"status"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata"`
+	Spec              RefinerySpec   `json:"spec"`
+	Status            RefineryStatus `json:"status"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -88,19 +88,18 @@ type SiloStatus struct {
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Harvester describes resources
 type Harvester struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 
-	Spec HarvesterSpec `json:"items"`
+	Spec HarvesterSpec `json:"spec"`
 }
 
 // HarvesterSpec is the spec for a Harvester resource
 type HarvesterSpec struct {
-	Selector    string  `json:"selector"`
-	Refinery    string  `json:"refinery"`
-	SegmentSize float32 `json:"segment"`
+	Selector    map[string]string `json:"selector"`
+	Refinery    string            `json:"refinery"`
+	SegmentSize float32           `json:"segment"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

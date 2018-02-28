@@ -21,11 +21,11 @@ limitations under the License.
 package v1alpha1
 
 import (
-	unsafe "unsafe"
+	"unsafe"
 
-	replay "github.com/lwolf/kube-replay/pkg/apis/replay"
-	conversion "k8s.io/apimachinery/pkg/conversion"
-	runtime "k8s.io/apimachinery/pkg/runtime"
+	"github.com/lwolf/kube-replay/pkg/apis/replay"
+	"k8s.io/apimachinery/pkg/conversion"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func init() {
@@ -170,7 +170,7 @@ func Convert_replay_HarvesterList_To_v1alpha1_HarvesterList(in *replay.Harvester
 }
 
 func autoConvert_v1alpha1_HarvesterSpec_To_replay_HarvesterSpec(in *HarvesterSpec, out *replay.HarvesterSpec, s conversion.Scope) error {
-	out.Selector = in.Selector
+	out.Selector = *(*map[string]string)(unsafe.Pointer(&in.Selector))
 	out.Refinery = in.Refinery
 	out.SegmentSize = in.SegmentSize
 	return nil
@@ -182,7 +182,7 @@ func Convert_v1alpha1_HarvesterSpec_To_replay_HarvesterSpec(in *HarvesterSpec, o
 }
 
 func autoConvert_replay_HarvesterSpec_To_v1alpha1_HarvesterSpec(in *replay.HarvesterSpec, out *HarvesterSpec, s conversion.Scope) error {
-	out.Selector = in.Selector
+	out.Selector = *(*map[string]string)(unsafe.Pointer(&in.Selector))
 	out.Refinery = in.Refinery
 	out.SegmentSize = in.SegmentSize
 	return nil
