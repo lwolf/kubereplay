@@ -9,6 +9,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func fileSiloToArgs(spec *replay.FileSilo) *[]string {
@@ -116,7 +117,33 @@ func mergeArgs(newArgs []string, args []string) []string {
 	return args
 }
 
-func GenerateDeployment(siloName string, spec *replay.RefinerySpec) *appsv1.Deployment {
+func GenerateService(name string, spec *replay.RefinerySpec) *apiv1.Service {
+	return &apiv1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("refinery-%s", name),
+			Namespace: "default",
+			Labels: map[string]string{
+				"kubereplay-app": name,
+			},
+		},
+		Spec: apiv1.ServiceSpec{
+			Ports: []apiv1.ServicePort{
+				{
+					Name:       "gor",
+					Protocol:   apiv1.ProtocolTCP,
+					Port:       28020,
+					TargetPort: intstr.FromInt(28020),
+				},
+			},
+			Selector: map[string]string{
+				"kubereplay-app": name,
+			},
+			Type: apiv1.ServiceTypeClusterIP,
+		},
+	}
+}
+
+func GenerateDeployment(name string, spec *replay.RefinerySpec) *appsv1.Deployment {
 
 	var args []string
 	// Confugure input arguments
@@ -164,25 +191,28 @@ func GenerateDeployment(siloName string, spec *replay.RefinerySpec) *appsv1.Depl
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("refinery-%s", siloName),
+			Name: fmt.Sprintf("refinery-%s", name),
+			Labels: map[string]string{
+				"kubereplay-app": name,
+			},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: int32Ptr(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": "kubereplay",
+					"kubereplay-app": name,
 				},
 			},
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": "kubereplay",
+						"kubereplay-app": name,
 					},
 				},
 				Spec: apiv1.PodSpec{
 					Containers: []apiv1.Container{
 						{
-							Name:  "replay-silo",
+							Name:  "goreplay",
 							Image: "buger/goreplay:latest",
 							Args:  args,
 							Ports: []apiv1.ContainerPort{

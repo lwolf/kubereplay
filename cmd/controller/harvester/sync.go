@@ -1,24 +1,24 @@
 package harvester
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/tools/cache"
-	//"k8s.io/client-go/util/retry"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/runtime"
 	k8sclient "k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
 
-	"errors"
 	"github.com/lwolf/kube-replay/pkg/apis/replay/v1alpha1"
 	client "github.com/lwolf/kube-replay/pkg/client/clientset/versioned"
 	factory "github.com/lwolf/kube-replay/pkg/client/informers/externalversions"
-	"strings"
 )
 
 var (
@@ -45,10 +45,6 @@ func labelSelector(selector *map[string]string) string {
 	return strings.Join(result, ",")
 }
 
-// sync will attempt to 'Sync' an refinery resource. It checks to see if the refinery
-// has already been processed, and if not will create goreplay deployment and update the resource
-// accordingly. This method is called whenever this controller starts, and
-// whenever the resource changes, and also periodically every resyncPeriod.
 func sync(r *v1alpha1.Harvester) error {
 	log.Printf("Found new event about Harvester '%s/%s'", r.Namespace, r.Name)
 
@@ -69,29 +65,60 @@ func sync(r *v1alpha1.Harvester) error {
 	if err != nil {
 		log.Printf("Failed to get list of rc with labels")
 	}
+
+	var rsNamesToProcess []string
+
 	for _, rc := range rcs.Items {
 		log.Printf("Found RC %s", rc.Name)
+		alreadyProcessed := false
+		for _, c := range rc.Spec.Template.Spec.Containers {
+			if c.Name == "goreplay" {
+				alreadyProcessed = true
+			}
+		}
+		if alreadyProcessed != true {
+			rsNamesToProcess = append(rsNamesToProcess, rc.Name)
+		}
+
 	}
 
-	//retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-	//	// Retrieve the latest version of Deployment before attempting update
-	//	// RetryOnConflict uses exponential backoff to avoid exhausting the apiserver
-	//
-	//	refineryClient := cl.KubereplayV1alpha1().Refineries(r.Namespace)
-	//
-	//	result, getErr := refineryClient.Get(r.Name, metav1.GetOptions{})
-	//	if getErr != nil {
-	//		log.Fatalf("Failed to get latest version of Silo: %v", getErr)
-	//	}
-	//	result.Status.Deployed = true
-	//	_, updateErr := refineryClient.Update(result)
-	//	return updateErr
-	//})
-	//if retryErr != nil {
-	//	log.Printf("Update failed: %v", retryErr)
-	//	return retryErr
-	//}
-	//log.Printf("Deployment updated...")
+	for _, name := range rsNamesToProcess {
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			// Retrieve the latest version of Deployment before attempting update
+			// RetryOnConflict uses exponential backoff to avoid exhausting the apiserver
+
+			rc, getErr := rcClient.Get(name, metav1.GetOptions{})
+			if getErr != nil {
+				log.Fatalf("Failed to get latest version of RC: %v", getErr)
+			}
+			// XXX: logic assumes that we have at least one container in a pod with at least one
+			// exposed port
+			// TODO: configure port through Harvester object
+			args := []string{
+				"--input-raw",
+				fmt.Sprintf(":%d", rc.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort),
+				"--output-tcp",
+				fmt.Sprintf("refinery-%s.%s:28020", r.Spec.Refinery, r.Namespace),
+			}
+
+			gorContainer := apiv1.Container{
+				Name:  "goreplay",
+				Image: "buger/goreplay:latest",
+				Args:  args,
+			}
+
+			rc.Spec.Template.Spec.Containers = append(rc.Spec.Template.Spec.Containers, gorContainer)
+
+			_, updateErr := rcClient.Update(rc)
+			return updateErr
+		})
+		if retryErr != nil {
+			log.Printf("Update failed: %v", retryErr)
+			return retryErr
+		}
+		log.Printf("RC updated...")
+
+	}
 	return nil
 }
 

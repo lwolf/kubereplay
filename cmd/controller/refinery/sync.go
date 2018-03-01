@@ -5,19 +5,19 @@ import (
 	"log"
 	"time"
 
+	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
+	k8sclient "k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
-	restclient "k8s.io/client-go/rest"
-	k8sclient "k8s.io/client-go/kubernetes"
-	apiv1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/lwolf/kube-replay/pkg/apis/replay"
 	"github.com/lwolf/kube-replay/pkg/apis/replay/v1alpha1"
-	factory "github.com/lwolf/kube-replay/pkg/client/informers/externalversions"
 	client "github.com/lwolf/kube-replay/pkg/client/clientset/versioned"
+	factory "github.com/lwolf/kube-replay/pkg/client/informers/externalversions"
 )
 
 var (
@@ -49,8 +49,16 @@ func sync(r *v1alpha1.Refinery) error {
 			log.Printf("Unable to convert refinery spec v1")
 			return err
 		}
-		deployment := GenerateDeployment(r.Name, &spec.Spec)
 
+		service := GenerateService(r.Name, &spec.Spec)
+		serviceClient := kc.CoreV1().Services(apiv1.NamespaceDefault)
+		_, err = serviceClient.Create(service)
+		if err != nil {
+			log.Printf("Failed to create service: %v", err)
+			return err
+		}
+
+		deployment := GenerateDeployment(r.Name, &spec.Spec)
 		// Create Deployment
 		log.Printf("Creating refinery deployment...")
 		result, err := deploymentsClient.Create(deployment)
