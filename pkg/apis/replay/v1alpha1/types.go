@@ -98,6 +98,7 @@ type Harvester struct {
 // HarvesterSpec is the spec for a Harvester resource
 type HarvesterSpec struct {
 	Selector    map[string]string `json:"selector"`
+	AppPort     int32             `json:"appPort"`
 	Refinery    string            `json:"refinery"`
 	SegmentSize float32           `json:"segment"`
 }

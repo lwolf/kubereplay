@@ -48,36 +48,34 @@ func labelSelector(selector *map[string]string) string {
 func sync(r *v1alpha1.Harvester) error {
 	log.Printf("Found new event about Harvester '%s/%s'", r.Namespace, r.Name)
 
-	// trying to find replicaset
-	//rsClient := kc.AppsV1().ReplicaSets(apiv1.NamespaceDefault)
-	// trying to find replication controller
-	rcClient := kc.CoreV1().ReplicationControllers(apiv1.NamespaceDefault)
+	deployClient := kc.AppsV1().Deployments(apiv1.NamespaceDefault)
+
 	selector := labelSelector(&r.Spec.Selector)
 	if selector == "" {
 		log.Printf("Empty selector found in %s Harvester", r.Name)
 		return errors.New("empty selector found in Harvester")
 	}
 
-	rcs, err := rcClient.List(metav1.ListOptions{
+	deploys, err := deployClient.List(metav1.ListOptions{
 		LabelSelector: selector,
 	})
-	log.Println("Trying to get list of rcs")
+	log.Println("Trying to get list of deploys")
 	if err != nil {
-		log.Printf("Failed to get list of rc with labels")
+		log.Printf("Failed to get list of deploys with labels")
 	}
 
 	var rsNamesToProcess []string
 
-	for _, rc := range rcs.Items {
-		log.Printf("Found RC %s", rc.Name)
+	for _, d := range deploys.Items {
+		log.Printf("Found RC %s", d.Name)
 		alreadyProcessed := false
-		for _, c := range rc.Spec.Template.Spec.Containers {
+		for _, c := range d.Spec.Template.Spec.Containers {
 			if c.Name == "goreplay" {
 				alreadyProcessed = true
 			}
 		}
 		if alreadyProcessed != true {
-			rsNamesToProcess = append(rsNamesToProcess, rc.Name)
+			rsNamesToProcess = append(rsNamesToProcess, d.Name)
 		}
 
 	}
@@ -87,16 +85,13 @@ func sync(r *v1alpha1.Harvester) error {
 			// Retrieve the latest version of Deployment before attempting update
 			// RetryOnConflict uses exponential backoff to avoid exhausting the apiserver
 
-			rc, getErr := rcClient.Get(name, metav1.GetOptions{})
+			rc, getErr := deployClient.Get(name, metav1.GetOptions{})
 			if getErr != nil {
 				log.Fatalf("Failed to get latest version of RC: %v", getErr)
 			}
-			// XXX: logic assumes that we have at least one container in a pod with at least one
-			// exposed port
-			// TODO: configure port through Harvester object
 			args := []string{
 				"--input-raw",
-				fmt.Sprintf(":%d", rc.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort),
+				fmt.Sprintf(":%d", r.Spec.AppPort),
 				"--output-tcp",
 				fmt.Sprintf("refinery-%s.%s:28020", r.Spec.Refinery, r.Namespace),
 			}
@@ -109,7 +104,7 @@ func sync(r *v1alpha1.Harvester) error {
 
 			rc.Spec.Template.Spec.Containers = append(rc.Spec.Template.Spec.Containers, gorContainer)
 
-			_, updateErr := rcClient.Update(rc)
+			_, updateErr := deployClient.Update(rc)
 			return updateErr
 		})
 		if retryErr != nil {

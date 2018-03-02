@@ -92,6 +92,7 @@ type Harvester struct {
 
 type HarvesterSpec struct {
 	Selector    map[string]string
+	AppPort     int32
 	Refinery    string
 	SegmentSize float32
 }
