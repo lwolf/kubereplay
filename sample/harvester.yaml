@@ -1,0 +1,15 @@
+apiVersion: kubereplay.lwolf.org/v1alpha1
+kind: Harvester
+metadata:
+  name: harvester-example
+spec:
+  # Set percentage of instances to capture traffic, from 0 to 100
+  # 100 represents all instances
+  segment: 100
+  # Configure goreplay to listen to this port
+  appPort: 8080
+  # Select instances based on selector
+  selector:
+    app: echoserver
+  # Name of the silo to send traffic to
+  refinery: "my-refinery"
