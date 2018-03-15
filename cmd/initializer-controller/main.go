@@ -37,7 +37,6 @@ const (
 
 var (
 	initializerName string
-	namespace       string
 	annotation      string
 	external        bool
 	err             error
@@ -136,7 +135,6 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 func main() {
 	flag.StringVar(&annotation, "annotation", defaultAnnotation, "The annotation to trigger initialization")
 	flag.StringVar(&initializerName, "initializer-name", defaultInitializerName, "The initializer name")
-	flag.StringVar(&namespace, "namespace", "default", "The configuration namespace")
 	flag.BoolVar(&external, "external", false, "Run initializer using configmap")
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to kubeconfig")
 	flag.Parse()
