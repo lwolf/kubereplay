@@ -4,7 +4,6 @@ import (
 	"log"
 
 	"github.com/kubernetes-sigs/kubebuilder/pkg/builders"
-	v1listers "k8s.io/client-go/listers/apps/v1"
 
 	"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
 	"github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset"
@@ -25,6 +24,8 @@ func (c *RefineryControllerImpl) Reconcile(u *v1alpha1.Refinery) error {
 		log.Printf("Refinery %s already processed, skipping\n", u.Name)
 		return nil
 	}
+
+	// TODO: create configmap for initializer !!!
 
 	deploymentsClient := c.cs.AppsV1().Deployments(u.Namespace)
 
@@ -74,8 +75,6 @@ type RefineryControllerImpl struct {
 	// lister indexes properties about Refinery
 	lister listers.RefineryLister
 
-	deploymentLister v1listers.DeploymentLister
-
 	cset *clientset.Clientset
 	cs   *kubernetes.Clientset
 }
@@ -87,7 +86,6 @@ func (c *RefineryControllerImpl) Init(arguments sharedinformers.ControllerInitAr
 
 	// Use the lister for indexing refineries labels
 	c.lister = arguments.GetSharedInformers().Factory.Kubereplay().V1alpha1().Refineries().Lister()
-	c.deploymentLister = arguments.GetSharedInformers().KubernetesFactory.Apps().V1().Deployments().Lister()
 
 	c.cs = arguments.GetSharedInformers().KubernetesClientSet
 	c.cset = clientset.NewForConfigOrDie(arguments.GetRestConfig())

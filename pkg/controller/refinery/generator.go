@@ -5,14 +5,14 @@ import (
 	"log"
 	"strconv"
 
-	kubereplayv1alha1 "github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
+	kubereplayv1alpha1 "github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func fileSiloToArgs(spec *kubereplayv1alha1.FileSilo) *[]string {
+func fileSiloToArgs(spec *kubereplayv1alpha1.FileSilo) *[]string {
 	var args []string
 	if spec.Filename == "" {
 		log.Fatalf("Filename is required for file output mode")
@@ -43,7 +43,7 @@ func fileSiloToArgs(spec *kubereplayv1alha1.FileSilo) *[]string {
 	return &args
 }
 
-func tcpSiloToArgs(spec *kubereplayv1alha1.TcpSilo) *[]string {
+func tcpSiloToArgs(spec *kubereplayv1alpha1.TcpSilo) *[]string {
 	var args []string
 	if spec.Uri == "" {
 		log.Fatalf("Uri is required for tcp output mode")
@@ -53,13 +53,13 @@ func tcpSiloToArgs(spec *kubereplayv1alha1.TcpSilo) *[]string {
 	return &args
 }
 
-func stdoutSiloToArgs(spec *kubereplayv1alha1.StdoutSilo) *[]string {
+func stdoutSiloToArgs(spec *kubereplayv1alpha1.StdoutSilo) *[]string {
 	var args []string
 	args = append(args, "--output-stdout")
 	return &args
 }
 
-func httpSiloToArgs(spec *kubereplayv1alha1.HttpSilo) *[]string {
+func httpSiloToArgs(spec *kubereplayv1alpha1.HttpSilo) *[]string {
 	var args []string
 	if spec.Uri == "" {
 		log.Fatalf("Uri is required for http output mode")
@@ -79,7 +79,7 @@ func httpSiloToArgs(spec *kubereplayv1alha1.HttpSilo) *[]string {
 	return &args
 }
 
-func elasticsearchSiloToArgs(spec *kubereplayv1alha1.ElasticsearchSilo) *[]string {
+func elasticsearchSiloToArgs(spec *kubereplayv1alpha1.ElasticsearchSilo) *[]string {
 	var args []string
 	if spec.Uri == "" {
 		log.Fatalf("Uri is required for elasticsearch output mode")
@@ -90,7 +90,7 @@ func elasticsearchSiloToArgs(spec *kubereplayv1alha1.ElasticsearchSilo) *[]strin
 	return &args
 }
 
-func kafkaSiloToArgs(spec *kubereplayv1alha1.KafkaSilo) *[]string {
+func kafkaSiloToArgs(spec *kubereplayv1alpha1.KafkaSilo) *[]string {
 	var args []string
 	if spec.Uri == "" {
 		log.Fatalf("Uri is required for kafka output mode")
@@ -117,7 +117,7 @@ func mergeArgs(newArgs []string, args []string) []string {
 	return args
 }
 
-func GenerateService(name string, spec *kubereplayv1alha1.RefinerySpec) *apiv1.Service {
+func GenerateService(name string, spec *kubereplayv1alpha1.RefinerySpec) *apiv1.Service {
 	return &apiv1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("refinery-%s", name),
@@ -143,7 +143,7 @@ func GenerateService(name string, spec *kubereplayv1alha1.RefinerySpec) *apiv1.S
 	}
 }
 
-func GenerateDeployment(name string, r *kubereplayv1alha1.Refinery) *appsv1.Deployment {
+func GenerateDeployment(name string, r *kubereplayv1alpha1.Refinery) *appsv1.Deployment {
 
 	var args []string
 	// Confugure input arguments
@@ -196,7 +196,7 @@ func GenerateDeployment(name string, r *kubereplayv1alha1.Refinery) *appsv1.Depl
 		Name:       r.Name,
 		UID:        r.UID,
 		Kind:       "Refinery",
-		APIVersion: kubereplayv1alha1.SchemeGroupVersion.String(),
+		APIVersion: kubereplayv1alpha1.SchemeGroupVersion.String(),
 	}
 	ownerReferences = append(ownerReferences, ownerReference)
 

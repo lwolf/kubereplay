@@ -10,6 +10,7 @@ spec:
   appPort: 8080
   # Select instances based on selector
   selector:
-    app: echoserver
+    app: kubereplay
+    module: test
   # Name of the silo to send traffic to
-  refinery: "my-refinery"
+  refinery: "refinery-example"

@@ -11,6 +11,7 @@ import (
 
 	"fmt"
 	"github.com/ghodss/yaml"
+	"github.com/lwolf/kubereplay/pkg/constants"
 	"github.com/mohae/deepcopy"
 	"k8s.io/api/apps/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -28,11 +29,7 @@ import (
 )
 
 const (
-	defaultAnnotation      = "kubereplay.lwolf.org/mode"
-	harvesterAnnotation    = "kubereplay.lwolf.org/harvester"
 	defaultInitializerName = "kubereplay.initializer.lwolf.org"
-	annotationValueCapture = "blue"
-	annotationValueSkip    = "green"
 )
 
 var (
@@ -76,7 +73,7 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 			// Check required annotation
 			annotations := deployment.ObjectMeta.GetAnnotations()
 			a, ok := annotations[annotation]
-			if !ok || a == annotationValueSkip {
+			if !ok || a == constants.AnnotationValueSkip {
 				log.Printf("Required '%s' annotation missing or sidecar is not required. skipping container injection", annotation)
 				_, err := clientset.AppsV1beta1().Deployments(deployment.Namespace).Update(initializedDeployment)
 				if err != nil {
@@ -85,7 +82,7 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 				return nil
 			}
 
-			harvesterName, ok := annotations[harvesterAnnotation]
+			harvesterName, ok := annotations[constants.AnnotationKeyHarvester]
 			if !ok {
 				log.Printf("harvester annotation does not exist, skipping...")
 				return nil
@@ -133,7 +130,7 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 }
 
 func main() {
-	flag.StringVar(&annotation, "annotation", defaultAnnotation, "The annotation to trigger initialization")
+	flag.StringVar(&annotation, "annotation", constants.AnnotationKeyDefault, "The annotation to trigger initialization")
 	flag.StringVar(&initializerName, "initializer-name", defaultInitializerName, "The initializer name")
 	flag.BoolVar(&external, "external", false, "Run initializer using configmap")
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to kubeconfig")

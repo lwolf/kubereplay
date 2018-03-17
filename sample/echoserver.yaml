@@ -19,9 +19,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: echoheaders
-  annotations:
-    kubereplay.lwolf.org/harvester: "example-harvester"
-    kubereplay.lwolf.org/mode: "blue"
 spec:
   selector:
     matchLabels:
