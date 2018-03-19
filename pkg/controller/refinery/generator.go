@@ -117,6 +117,47 @@ func mergeArgs(newArgs []string, args []string) []string {
 	return args
 }
 
+func GenerateSidecar(refinerySvc string, port uint32) *apiv1.Container {
+	return &apiv1.Container{
+		Name:  "goreplay",
+		Image: "buger/goreplay:latest",
+		Args: []string{
+			"--input-raw",
+			fmt.Sprintf(":%d", port),
+			"--output-tcp",
+			fmt.Sprintf("%s:28020", refinerySvc),
+		},
+		//Resources: apiv1.ResourceRequirements{
+		//	Limits: apiv1.ResourceList{},
+		//	Requests: apiv1.ResourceList{},
+		//},
+	}
+}
+
+func ConfigmapName(harvesterName string) string {
+	return fmt.Sprintf("%s-sidecar", harvesterName)
+}
+
+func GenerateConfigmap(name string, spec *kubereplayv1alpha1.HarvesterSpec) *apiv1.ConfigMap {
+	container := GenerateSidecar(
+		fmt.Sprintf("refinery-%s.default", spec.Refinery),
+		spec.AppPort,
+	)
+	return &apiv1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: "default",
+			Labels: map[string]string{
+				"kubereplay-app": name,
+			},
+		},
+		// TODO: pretty print container data
+		Data: map[string]string{
+			"key": fmt.Sprintf("|\n %s", container.String()),
+		},
+	}
+}
+
 func GenerateService(name string, spec *kubereplayv1alpha1.RefinerySpec) *apiv1.Service {
 	return &apiv1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -191,14 +232,14 @@ func GenerateDeployment(name string, r *kubereplayv1alpha1.Refinery) *appsv1.Dep
 		args = append(args, spec.Timeout)
 	}
 
-	var ownerReferences []metav1.OwnerReference
-	ownerReference := metav1.OwnerReference{
-		Name:       r.Name,
-		UID:        r.UID,
-		Kind:       "Refinery",
-		APIVersion: kubereplayv1alpha1.SchemeGroupVersion.String(),
+	ownerReferences := []metav1.OwnerReference{
+		{
+			Name:       r.Name,
+			UID:        r.UID,
+			Kind:       "Refinery",
+			APIVersion: kubereplayv1alpha1.SchemeGroupVersion.String(),
+		},
 	}
-	ownerReferences = append(ownerReferences, ownerReference)
 
 	deployment := &appsv1.Deployment{
 

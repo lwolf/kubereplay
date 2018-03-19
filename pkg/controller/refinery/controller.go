@@ -13,19 +13,15 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
-// EDIT THIS FILE!
 // Created by "kubebuilder create resource" for you to implement controller logic for the Refinery resource API
 
 // Reconcile handles enqueued messages
 func (c *RefineryControllerImpl) Reconcile(u *v1alpha1.Refinery) error {
-	// INSERT YOUR CODE HERE - implement controller logic to reconcile observed and desired state of the object
 	log.Printf("Running reconcile Refinery for %s\n", u.Name)
 	if u.Status.Deployed == true {
 		log.Printf("Refinery %s already processed, skipping\n", u.Name)
 		return nil
 	}
-
-	// TODO: create configmap for initializer !!!
 
 	deploymentsClient := c.cs.AppsV1().Deployments(u.Namespace)
 

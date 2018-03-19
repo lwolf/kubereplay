@@ -10,4 +10,5 @@ func (si *SharedInformers) SetupKubernetesTypes() bool {
 // StartAdditionalInformers starts watching Deployments
 func (si *SharedInformers) StartAdditionalInformers(shutdown <-chan struct{}) {
 	go si.KubernetesFactory.Extensions().V1beta1().Deployments().Informer().Run(shutdown)
+	go si.KubernetesFactory.Core().V1().ConfigMaps().Informer().Run(shutdown)
 }

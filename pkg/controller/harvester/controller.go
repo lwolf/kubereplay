@@ -1,7 +1,9 @@
 package harvester
 
 import (
+	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/kubernetes-sigs/kubebuilder/pkg/builders"
@@ -9,17 +11,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
+	corev1listers "k8s.io/client-go/listers/core/v1"
 	extv1listers "k8s.io/client-go/listers/extensions/v1beta1"
 
-	"fmt"
 	"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
 	listers "github.com/lwolf/kubereplay/pkg/client/listers_generated/kubereplay/v1alpha1"
 	"github.com/lwolf/kubereplay/pkg/constants"
+	"github.com/lwolf/kubereplay/pkg/controller/refinery"
 	"github.com/lwolf/kubereplay/pkg/controller/sharedinformers"
-)
-
-const (
-	annotation = ""
 )
 
 // Created by "kubebuilder create resource" for you to implement controller logic for the Harvester resource API
@@ -28,11 +27,24 @@ func int32Ptr(i int32) *int32 { return &i }
 
 // Reconcile handles enqueued messages
 func (c *HarvesterControllerImpl) Reconcile(u *v1alpha1.Harvester) error {
+	log.Printf("***********************")
 	log.Printf("running reconcile Harvester for %s\n", u.Name)
 
 	selector, err := metav1.LabelSelectorAsSelector(
 		&metav1.LabelSelector{MatchLabels: u.Spec.Selector},
 	)
+
+	configName := refinery.ConfigmapName(u.Name)
+	_, err = c.cs.CoreV1().ConfigMaps("default").Get(configName, metav1.GetOptions{})
+	// TODO: properly handle http errors here
+	if err != nil {
+		cfg := refinery.GenerateConfigmap(configName, &u.Spec)
+		_, err = c.cs.CoreV1().ConfigMaps(u.Namespace).Create(cfg)
+		if err != nil {
+			log.Printf("failed to create configmap %v", err)
+			return err
+		}
+	}
 
 	deploys, err := c.extDeploymentLister.List(selector)
 
@@ -69,6 +81,15 @@ func (c *HarvesterControllerImpl) Reconcile(u *v1alpha1.Harvester) error {
 			d.Annotations = annotations
 			d.Spec.Replicas = int32Ptr(0)
 
+			//ownR := append(ownerReferences, metav1.OwnerReference{
+			//	Name: d.Name,
+			//	UID: d.UID,
+			//	Kind: d.Kind,
+			//	APIVersion: d.TypeMeta.APIVersion,
+			//})
+			//log.Println(d)
+			//log.Println(ownR)
+
 			blueDeploy := extBeta.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					OwnerReferences: ownerReferences,
@@ -77,6 +98,7 @@ func (c *HarvesterControllerImpl) Reconcile(u *v1alpha1.Harvester) error {
 					Annotations: map[string]string{
 						constants.AnnotationKeyDefault:   constants.AnnotationValueCapture,
 						constants.AnnotationKeyHarvester: u.Name,
+						constants.AnnotationKeyMaster:    string(d.UID),
 					},
 				},
 				Spec: *d.Spec.DeepCopy(),
@@ -96,11 +118,14 @@ func (c *HarvesterControllerImpl) Reconcile(u *v1alpha1.Harvester) error {
 				return err
 			}
 		} else {
+			if a == constants.AnnotationValueCapture {
+				log.Printf("resource %s is fully automated", d.Name)
+				continue
+			}
 			// todo: handle scaling here
 			log.Printf("debug: annotation is already present %s, need to check scale ", a)
 			return nil
 		}
-
 		//if d.Annotations
 		// 1. check that deploy is not processed yet
 		// 2. clone deployment
@@ -117,11 +142,11 @@ func (c *HarvesterControllerImpl) Reconcile(u *v1alpha1.Harvester) error {
 type HarvesterControllerImpl struct {
 	builders.DefaultControllerFns
 
-	// lister indexes properties about Harvester
-	lister listers.HarvesterLister
-
+	lister              listers.HarvesterLister
 	extDeploymentLister extv1listers.DeploymentLister
-	cs                  *kubernetes.Clientset
+	coreLister          corev1listers.ConfigMapLister
+
+	cs *kubernetes.Clientset
 }
 
 // Init initializes the controller and is called by the generated code
@@ -132,6 +157,7 @@ func (c *HarvesterControllerImpl) Init(arguments sharedinformers.ControllerInitA
 	// Use the lister for indexing harvesters labels
 	c.lister = arguments.GetSharedInformers().Factory.Kubereplay().V1alpha1().Harvesters().Lister()
 	c.extDeploymentLister = arguments.GetSharedInformers().KubernetesFactory.Extensions().V1beta1().Deployments().Lister()
+	c.coreLister = arguments.GetSharedInformers().KubernetesFactory.Core().V1().ConfigMaps().Lister()
 	c.cs = arguments.GetSharedInformers().KubernetesClientSet
 
 	// To watch other resource types, uncomment this function and replace Foo with the resource name to watch.

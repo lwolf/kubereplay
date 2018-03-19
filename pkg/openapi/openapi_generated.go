@@ -14,6 +14,46 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
+		"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1.ControlledObject": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"kind": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+						"blue_name": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+						"blue_replicas": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"integer"},
+								Format: "int32",
+							},
+						},
+						"green_name": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+						"green_replicas": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"integer"},
+								Format: "int32",
+							},
+						},
+					},
+					Required: []string{"kind", "blue_name", "blue_replicas", "green_name", "green_replicas"},
+				},
+			},
+			Dependencies: []string{},
+		},
 		"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1.ElasticsearchSilo": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -186,8 +226,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"selector": {
 							SchemaProps: spec.SchemaProps{
-								Description: "INSERT YOUR CODE HERE - define desired state schema",
-								Type:        []string{"object"},
+								Type: []string{"object"},
 								AdditionalProperties: &spec.SchemaOrBool{
 									Schema: &spec.Schema{
 										SchemaProps: spec.SchemaProps{
@@ -225,10 +264,24 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Description: "HarvesterStatus defines the observed state of Harvester",
-					Properties:  map[string]spec.Schema{},
+					Properties: map[string]spec.Schema{
+						"controlled": {
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"array"},
+								Items: &spec.SchemaOrArray{
+									Schema: &spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Ref: ref("github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1.ControlledObject"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
-			Dependencies: []string{},
+			Dependencies: []string{
+				"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1.ControlledObject"},
 		},
 		"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1.HarvesterStatusStrategy": {
 			Schema: spec.Schema{

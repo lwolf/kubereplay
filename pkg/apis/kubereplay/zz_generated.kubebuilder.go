@@ -85,10 +85,19 @@ type Refinery struct {
 }
 
 type HarvesterStatus struct {
+	ControlledObjects []ControlledObject
 }
 
 type RefineryStatus struct {
 	Deployed bool
+}
+
+type ControlledObject struct {
+	Kind          string
+	BlueName      string
+	BlueReplicas  int32
+	GreenName     string
+	GreenReplicas int32
 }
 
 type RefinerySpec struct {
