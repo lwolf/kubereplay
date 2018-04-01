@@ -1,25 +1,24 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"fmt"
-	"github.com/ghodss/yaml"
+	"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
+	v1alpha1lister "github.com/lwolf/kubereplay/pkg/client/listers_generated/kubereplay/v1alpha1"
 	"github.com/lwolf/kubereplay/pkg/constants"
+	"github.com/lwolf/kubereplay/pkg/controller/sharedinformers"
 	"github.com/mohae/deepcopy"
 	"k8s.io/api/apps/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -41,88 +40,155 @@ var (
 	kubeconfig      string
 )
 
-type config struct {
-	Containers []corev1.Container
-}
-
-func configmapToConfig(configmap *corev1.ConfigMap) (*config, error) {
-	var c config
-	err := yaml.Unmarshal([]byte(configmap.Data["config"]), &c)
-	if err != nil {
-		return nil, err
+func BlueGreenReplicas(n int32, segmentSize int32) (blueReplicas int32, greenReplicas int32) {
+	if segmentSize == 100 {
+		return n, 0
 	}
-	return &c, nil
+	blueReplicas = n / segmentSize * 100
+	greenReplicas = n - blueReplicas
+	return
 }
 
-func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.Clientset) error {
-	log.Printf("%s: getInitializers for %s %v", time.Now(), deployment.Name, deployment.ObjectMeta.GetInitializers())
+func GenerateSidecar(refinerySvc string, port uint32) *corev1.Container {
+	return &corev1.Container{
+		Name:  "goreplay",
+		Image: "buger/goreplay:latest",
+		Args: []string{
+			"--input-raw",
+			fmt.Sprintf(":%d", port),
+			"--output-tcp",
+			fmt.Sprintf("%s:28020", refinerySvc),
+		},
+		//Resources: apiv1.ResourceRequirements{
+		//	Limits: apiv1.ResourceList{},
+		//	Requests: apiv1.ResourceList{},
+		//},
+	}
+}
+
+func createShadowDeployment(d *v1beta1.Deployment, clientset *kubernetes.Clientset) {
+	_, err = clientset.AppsV1beta1().Deployments(d.Namespace).Create(d)
+	if err != nil {
+		log.Printf("failed to create blue deployment %s: %v", d.Name, err)
+	}
+
+}
+
+func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.Clientset, lister v1alpha1lister.HarvesterLister) error {
 	if deployment.ObjectMeta.GetInitializers() != nil {
 		pendingInitializers := deployment.ObjectMeta.GetInitializers().Pending
 		if initializerName == pendingInitializers[0].Name {
 			log.Printf("Initializing deployment: %s", deployment.Name)
-			o := deepcopy.Copy(deployment)
-			initializedDeployment := o.(*v1beta1.Deployment)
+
+			green := deepcopy.Copy(deployment)
+			initializedDeploymentGreen := green.(*v1beta1.Deployment)
 
 			// Remove self from the list of pending Initializers while preserving ordering.
 			if len(pendingInitializers) == 1 {
-				initializedDeployment.ObjectMeta.Initializers = nil
+				initializedDeploymentGreen.ObjectMeta.Initializers = nil
 			} else {
-				initializedDeployment.ObjectMeta.Initializers.Pending = append(pendingInitializers[:0], pendingInitializers[1:]...)
+				initializedDeploymentGreen.ObjectMeta.Initializers.Pending = append(pendingInitializers[:0], pendingInitializers[1:]...)
 			}
 
-			// Check required annotation
-			annotations := deployment.ObjectMeta.GetAnnotations()
-			a, ok := annotations[annotation]
-			if !ok || a == constants.AnnotationValueSkip {
-				log.Printf("Required '%s' annotation missing or sidecar is not required. skipping container injection", annotation)
-				_, err := clientset.AppsV1beta1().Deployments(deployment.Namespace).Update(initializedDeployment)
+			selector, err := metav1.LabelSelectorAsSelector(
+				&metav1.LabelSelector{MatchLabels: deployment.ObjectMeta.GetLabels()},
+			)
+			var skip bool
+			harvesters, err := lister.Harvesters(deployment.Namespace).List(selector)
+			if err != nil {
+				log.Printf("failed to get list of harvesters: %v", err)
+				skip = true
+			}
+
+			if len(harvesters) == 0 {
+				log.Printf("debug: harvesters not found for deployment %s with selectors %v", deployment.Name, selector)
+				skip = true
+			}
+			annotations := deployment.GetAnnotations()
+			_, ok := annotations[constants.AnnotationKeyDefault]
+			if ok {
+				skip = true
+			}
+
+			if skip {
+				// Releasing original deployment
+				_, err := clientset.AppsV1beta1().Deployments(deployment.Namespace).Update(initializedDeploymentGreen)
 				if err != nil {
+					log.Printf("failed to update initialized green deployment %s: %v ", initializedDeploymentGreen.Name, err)
 					return err
 				}
 				return nil
 			}
 
-			harvesterName, ok := annotations[constants.AnnotationKeyHarvester]
-			if !ok {
-				log.Printf("harvester annotation does not exist, skipping...")
-				return nil
+			h := harvesters[0]
+
+			ownerReferences := []metav1.OwnerReference{
+				{
+					Name:       h.Name,
+					UID:        h.UID,
+					Kind:       "Harvester",
+					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+				},
 			}
 
-			configmapName := fmt.Sprintf("%s-sidecar", harvesterName)
-
-			cm, err := clientset.CoreV1().ConfigMaps(deployment.Namespace).Get(configmapName, metav1.GetOptions{})
-			if err != nil {
-				log.Fatal(err)
+			initializedDeploymentBlue := &v1beta1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					OwnerReferences: ownerReferences,
+					Name:            fmt.Sprintf("%s-gor", deployment.Name),
+					Namespace:       deployment.Namespace,
+					Labels:          deployment.ObjectMeta.Labels,
+				},
+				Spec: *deployment.Spec.DeepCopy(),
 			}
 
-			c, err := configmapToConfig(cm)
-			if err != nil {
-				log.Fatal(err)
+			//Remove self from the list of pending Initializers while preserving ordering.
+			if len(pendingInitializers) == 1 {
+				initializedDeploymentBlue.ObjectMeta.Initializers = nil
+			} else {
+				initializedDeploymentBlue.ObjectMeta.Initializers.Pending = append(pendingInitializers[:0], pendingInitializers[1:]...)
 			}
 
-			// Modify the Deployment's Pod template to include the Envoy container
-			// and configuration volume. Then patch the original deployment.
-			initializedDeployment.Spec.Template.Spec.Containers = append(deployment.Spec.Template.Spec.Containers, c.Containers...)
+			greenAnnotations := initializedDeploymentGreen.GetAnnotations()
+			blueReplicas, greenReplicas := BlueGreenReplicas(*deployment.Spec.Replicas, int32(h.Spec.SegmentSize))
+			log.Printf("current annotations: %v", greenAnnotations)
+			if greenAnnotations == nil {
+				greenAnnotations = make(map[string]string)
+			}
+			// set annotation for original deployment
+			greenAnnotations[constants.AnnotationKeyDefault] = constants.AnnotationValueSkip
+			greenAnnotations[constants.AnnotationKeyHarvester] = h.Name
+			initializedDeploymentGreen.ObjectMeta.OwnerReferences = ownerReferences
+			initializedDeploymentGreen.Annotations = greenAnnotations
+			initializedDeploymentGreen.Spec.Replicas = &greenReplicas
 
-			oldData, err := json.Marshal(deployment)
+			blueAnnotations := initializedDeploymentBlue.GetAnnotations()
+			if blueAnnotations == nil {
+				blueAnnotations = make(map[string]string)
+			}
+			blueAnnotations[constants.AnnotationKeyDefault] = constants.AnnotationValueCapture
+			blueAnnotations[constants.AnnotationKeyHarvester] = h.Name
+			initializedDeploymentBlue.ObjectMeta.OwnerReferences = ownerReferences
+			initializedDeploymentBlue.Annotations = blueAnnotations
+			initializedDeploymentBlue.Spec.Replicas = &blueReplicas
+			initializedDeploymentBlue.Status = v1beta1.DeploymentStatus{}
+
+			sidecar := GenerateSidecar(
+				fmt.Sprintf("refinery-%s.default", h.Spec.Refinery),
+				// todo: remove port from harvester spec, get it directly from deployment
+				h.Spec.AppPort,
+			)
+
+			_, err = clientset.AppsV1beta1().Deployments(deployment.Namespace).Update(initializedDeploymentGreen)
 			if err != nil {
+				log.Printf("failed to simply update initialized and updated green deployment %s: %v ", initializedDeploymentGreen.Name, err)
 				return err
 			}
 
-			newData, err := json.Marshal(initializedDeployment)
-			if err != nil {
-				return err
-			}
+			// Modify the Deployment's Pod template to include the Gor container
+			initializedDeploymentBlue.Spec.Template.Spec.Containers = append(deployment.Spec.Template.Spec.Containers, *sidecar)
+			// Creating new deployment in a gorouting, otherwise it will block and timeout
+			go createShadowDeployment(initializedDeploymentBlue, clientset)
 
-			patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, v1beta1.Deployment{})
-			if err != nil {
-				return err
-			}
-
-			_, err = clientset.AppsV1beta1().Deployments(deployment.Namespace).Patch(deployment.Name, types.StrategicMergePatchType, patchBytes)
-			if err != nil {
-				return err
-			}
 		}
 	}
 
@@ -158,6 +224,14 @@ func main() {
 	restClient := clientset.AppsV1beta1().RESTClient()
 	watchlist := cache.NewListWatchFromClient(restClient, "deployments", corev1.NamespaceAll, fields.Everything())
 
+	stop := make(chan struct{})
+
+	si := sharedinformers.NewSharedInformers(clusterConfig, stop)
+	go si.Factory.Kubereplay().V1alpha1().Harvesters().Informer().Run(stop)
+	si.Factory.WaitForCacheSync(stop)
+
+	lister := si.Factory.Kubereplay().V1alpha1().Harvesters().Lister()
+
 	// Wrap the returned watchlist to workaround the inability to include
 	// the `IncludeUninitialized` list option when setting up watch clients.
 	includeUninitializedWatchlist := &cache.ListWatch{
@@ -176,7 +250,7 @@ func main() {
 	_, controller := cache.NewInformer(includeUninitializedWatchlist, &v1beta1.Deployment{}, resyncPeriod,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				err := initializeDeployment(obj.(*v1beta1.Deployment), clientset)
+				err := initializeDeployment(obj.(*v1beta1.Deployment), clientset, lister)
 				if err != nil {
 					log.Println(err)
 				}
@@ -184,7 +258,6 @@ func main() {
 		},
 	)
 
-	stop := make(chan struct{})
 	go controller.Run(stop)
 
 	signalChan := make(chan os.Signal, 1)
