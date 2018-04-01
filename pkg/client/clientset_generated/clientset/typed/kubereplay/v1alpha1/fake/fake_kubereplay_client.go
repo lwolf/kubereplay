@@ -1,9 +1,9 @@
 package fake
 
 import (
-	"github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset/typed/kubereplay/v1alpha1"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/testing"
+	v1alpha1 "github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset/typed/kubereplay/v1alpha1"
+	rest "k8s.io/client-go/rest"
+	testing "k8s.io/client-go/testing"
 )
 
 type FakeKubereplayV1alpha1 struct {

@@ -4,14 +4,14 @@ package v1alpha1
 
 import (
 	kubereplay_v1alpha1 "github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
-	"github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset"
-	"github.com/lwolf/kubereplay/pkg/client/informers_generated/externalversions/internalinterfaces"
-	"github.com/lwolf/kubereplay/pkg/client/listers_generated/kubereplay/v1alpha1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/tools/cache"
-	"time"
+	clientset "github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset"
+	internalinterfaces "github.com/lwolf/kubereplay/pkg/client/informers_generated/externalversions/internalinterfaces"
+	v1alpha1 "github.com/lwolf/kubereplay/pkg/client/listers_generated/kubereplay/v1alpha1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtime "k8s.io/apimachinery/pkg/runtime"
+	watch "k8s.io/apimachinery/pkg/watch"
+	cache "k8s.io/client-go/tools/cache"
+	time "time"
 )
 
 // HarvesterInformer provides access to a shared informer and lister for

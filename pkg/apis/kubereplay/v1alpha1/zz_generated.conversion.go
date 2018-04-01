@@ -5,10 +5,10 @@
 package v1alpha1
 
 import (
-	"github.com/lwolf/kubereplay/pkg/apis/kubereplay"
-	"k8s.io/apimachinery/pkg/conversion"
-	"k8s.io/apimachinery/pkg/runtime"
-	"unsafe"
+	kubereplay "github.com/lwolf/kubereplay/pkg/apis/kubereplay"
+	conversion "k8s.io/apimachinery/pkg/conversion"
+	runtime "k8s.io/apimachinery/pkg/runtime"
+	unsafe "unsafe"
 )
 
 func init() {

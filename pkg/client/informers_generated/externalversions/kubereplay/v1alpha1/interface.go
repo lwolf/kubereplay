@@ -3,7 +3,7 @@
 package v1alpha1
 
 import (
-	"github.com/lwolf/kubereplay/pkg/client/informers_generated/externalversions/internalinterfaces"
+	internalinterfaces "github.com/lwolf/kubereplay/pkg/client/informers_generated/externalversions/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.

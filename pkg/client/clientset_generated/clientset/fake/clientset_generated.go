@@ -1,7 +1,7 @@
 package fake
 
 import (
-	"github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset"
+	clientset "github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset"
 	kubereplayv1alpha1 "github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset/typed/kubereplay/v1alpha1"
 	fakekubereplayv1alpha1 "github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset/typed/kubereplay/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"

@@ -3,8 +3,8 @@
 package kubereplay
 
 import (
-	"github.com/lwolf/kubereplay/pkg/client/informers_generated/externalversions/internalinterfaces"
-	"github.com/lwolf/kubereplay/pkg/client/informers_generated/externalversions/kubereplay/v1alpha1"
+	internalinterfaces "github.com/lwolf/kubereplay/pkg/client/informers_generated/externalversions/internalinterfaces"
+	v1alpha1 "github.com/lwolf/kubereplay/pkg/client/informers_generated/externalversions/kubereplay/v1alpha1"
 )
 
 // Interface provides access to each of this group's versions.

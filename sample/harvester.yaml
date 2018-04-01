@@ -2,6 +2,9 @@ apiVersion: kubereplay.lwolf.org/v1alpha1
 kind: Harvester
 metadata:
   name: harvester-example
+  labels:
+    app: kubereplay
+    module: test
 spec:
   # Set percentage of instances to capture traffic, from 0 to 100
   # 100 represents all instances

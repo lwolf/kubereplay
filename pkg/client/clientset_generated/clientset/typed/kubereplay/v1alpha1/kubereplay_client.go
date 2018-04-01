@@ -1,10 +1,10 @@
 package v1alpha1
 
 import (
-	"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
+	v1alpha1 "github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
 	"github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset/scheme"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/client-go/rest"
+	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
+	rest "k8s.io/client-go/rest"
 )
 
 type KubereplayV1alpha1Interface interface {

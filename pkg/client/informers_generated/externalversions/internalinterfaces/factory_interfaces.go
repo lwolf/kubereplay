@@ -3,11 +3,11 @@
 package internalinterfaces
 
 import (
-	"github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/cache"
-	"time"
+	clientset "github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtime "k8s.io/apimachinery/pkg/runtime"
+	cache "k8s.io/client-go/tools/cache"
+	time "time"
 )
 
 type NewInformerFunc func(clientset.Interface, time.Duration) cache.SharedIndexInformer

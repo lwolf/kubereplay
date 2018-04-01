@@ -67,16 +67,6 @@ func Resource(resource string) schema.GroupResource {
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type Harvester struct {
-	metav1.TypeMeta
-	metav1.ObjectMeta
-	Spec   HarvesterSpec
-	Status HarvesterStatus
-}
-
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 type Refinery struct {
 	metav1.TypeMeta
 	metav1.ObjectMeta
@@ -84,12 +74,29 @@ type Refinery struct {
 	Status RefineryStatus
 }
 
-type HarvesterStatus struct {
-	ControlledObjects []ControlledObject
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+type Harvester struct {
+	metav1.TypeMeta
+	metav1.ObjectMeta
+	Spec   HarvesterSpec
+	Status HarvesterStatus
 }
 
 type RefineryStatus struct {
 	Deployed bool
+}
+
+type HarvesterStatus struct {
+	ControlledObjects []ControlledObject
+}
+
+type HarvesterSpec struct {
+	Selector    map[string]string
+	AppPort     uint32
+	Refinery    string
+	SegmentSize uint32
 }
 
 type ControlledObject struct {
@@ -104,13 +111,6 @@ type RefinerySpec struct {
 	Workers int32
 	Timeout string
 	Storage *RefineryStorage
-}
-
-type HarvesterSpec struct {
-	Selector    map[string]string
-	AppPort     uint32
-	Refinery    string
-	SegmentSize uint32
 }
 
 type RefineryStorage struct {

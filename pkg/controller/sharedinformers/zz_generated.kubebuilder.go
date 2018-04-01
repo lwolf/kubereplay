@@ -34,8 +34,8 @@ func NewSharedInformers(config *rest.Config, shutdown <-chan struct{}) *SharedIn
 
 // startInformers starts all of the informers
 func (si *SharedInformers) startInformers(shutdown <-chan struct{}) {
-	go si.Factory.Kubereplay().V1alpha1().Harvesters().Informer().Run(shutdown)
 	go si.Factory.Kubereplay().V1alpha1().Refineries().Informer().Run(shutdown)
+	go si.Factory.Kubereplay().V1alpha1().Harvesters().Informer().Run(shutdown)
 }
 
 // ControllerInitArguments are arguments provided to the Init function for a new controller.

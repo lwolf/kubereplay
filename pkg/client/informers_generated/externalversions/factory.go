@@ -3,16 +3,16 @@
 package externalversions
 
 import (
-	"github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset"
-	"github.com/lwolf/kubereplay/pkg/client/informers_generated/externalversions/internalinterfaces"
-	"github.com/lwolf/kubereplay/pkg/client/informers_generated/externalversions/kubereplay"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/tools/cache"
-	"reflect"
-	"sync"
-	"time"
+	clientset "github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset"
+	internalinterfaces "github.com/lwolf/kubereplay/pkg/client/informers_generated/externalversions/internalinterfaces"
+	kubereplay "github.com/lwolf/kubereplay/pkg/client/informers_generated/externalversions/kubereplay"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtime "k8s.io/apimachinery/pkg/runtime"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
+	cache "k8s.io/client-go/tools/cache"
+	reflect "reflect"
+	sync "sync"
+	time "time"
 )
 
 type sharedInformerFactory struct {
