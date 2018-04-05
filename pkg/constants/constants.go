@@ -2,8 +2,8 @@ package constants
 
 const (
 	AnnotationKeyDefault   = "kubereplay.lwolf.org/mode"
-	AnnotationKeyHarvester = "kubereplay.lwolf.org/harvester"
-	AnnotationKeyMaster    = "kubereplay.lwolf.org/master"
+	AnnotationKeyReplicas  = "kubereplay.lwolf.org/replicas"
+	AnnotationKeyShadow    = "kubereplay.lwolf.org/shadow"
 	AnnotationValueCapture = "blue"
 	AnnotationValueSkip    = "green"
 )

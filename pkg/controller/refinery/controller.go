@@ -78,23 +78,11 @@ type RefineryControllerImpl struct {
 // Init initializes the controller and is called by the generated code
 // Register watches for additional resource types here.
 func (c *RefineryControllerImpl) Init(arguments sharedinformers.ControllerInitArguments) {
-	// INSERT YOUR CODE HERE - add logic for initializing the controller as needed
 
-	// Use the lister for indexing refineries labels
 	c.lister = arguments.GetSharedInformers().Factory.Kubereplay().V1alpha1().Refineries().Lister()
 
 	c.cs = arguments.GetSharedInformers().KubernetesClientSet
 	c.cset = clientset.NewForConfigOrDie(arguments.GetRestConfig())
-
-	// To watch other resource types, uncomment this function and replace Foo with the resource name to watch.
-	// Must define the func FooToRefinery(i interface{}) (string, error) {} that returns the Refinery
-	// "namespace/name"" to reconcile in response to the updated Foo
-	// Note: To watch Kubernetes resources, you must also update the StartAdditionalInformers function in
-	// pkg/controllers/sharedinformers/informers.go
-	//
-	// arguments.Watch("RefineryFoo",
-	//     arguments.GetSharedInformers().Factory.Bar().V1beta1().Bars().Informer(),
-	//     c.FooToRefinery)
 }
 
 func (c *RefineryControllerImpl) Get(namespace, name string) (*v1alpha1.Refinery, error) {

@@ -5,55 +5,15 @@
 package openapi
 
 import (
-	spec "github.com/go-openapi/spec"
-	resource "k8s.io/apimachinery/pkg/api/resource"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	intstr "k8s.io/apimachinery/pkg/util/intstr"
-	common "k8s.io/kube-openapi/pkg/common"
+	"github.com/go-openapi/spec"
+	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/kube-openapi/pkg/common"
 )
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1.ControlledObject": {
-			Schema: spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Properties: map[string]spec.Schema{
-						"kind": {
-							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
-							},
-						},
-						"blue_name": {
-							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
-							},
-						},
-						"blue_replicas": {
-							SchemaProps: spec.SchemaProps{
-								Type:   []string{"integer"},
-								Format: "int32",
-							},
-						},
-						"green_name": {
-							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
-							},
-						},
-						"green_replicas": {
-							SchemaProps: spec.SchemaProps{
-								Type:   []string{"integer"},
-								Format: "int32",
-							},
-						},
-					},
-					Required: []string{"kind", "blue_name", "blue_replicas", "green_name", "green_replicas"},
-				},
-			},
-			Dependencies: []string{},
-		},
 		"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1.ElasticsearchSilo": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -265,23 +225,16 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				SchemaProps: spec.SchemaProps{
 					Description: "HarvesterStatus defines the observed state of Harvester",
 					Properties: map[string]spec.Schema{
-						"controlled": {
+						"segment": {
 							SchemaProps: spec.SchemaProps{
-								Type: []string{"array"},
-								Items: &spec.SchemaOrArray{
-									Schema: &spec.Schema{
-										SchemaProps: spec.SchemaProps{
-											Ref: ref("github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1.ControlledObject"),
-										},
-									},
-								},
+								Type:   []string{"integer"},
+								Format: "int64",
 							},
 						},
 					},
 				},
 			},
-			Dependencies: []string{
-				"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1.ControlledObject"},
+			Dependencies: []string{},
 		},
 		"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1.HarvesterStatusStrategy": {
 			Schema: spec.Schema{

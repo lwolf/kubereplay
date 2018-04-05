@@ -17,15 +17,7 @@ type HarvesterSpec struct {
 
 // HarvesterStatus defines the observed state of Harvester
 type HarvesterStatus struct {
-	ControlledObjects []ControlledObject `json:"controlled,omitempty"`
-}
-
-type ControlledObject struct {
-	Kind          string `json:"kind"`
-	BlueName      string `json:"blue_name"`
-	BlueReplicas  int32  `json:"blue_replicas"`
-	GreenName     string `json:"green_name"`
-	GreenReplicas int32  `json:"green_replicas"`
+	SegmentSize uint32 `json:"segment,omitempty"`
 }
 
 // +genclient

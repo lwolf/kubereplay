@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/lwolf/kubereplay/helpers"
 	"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
 	v1alpha1lister "github.com/lwolf/kubereplay/pkg/client/listers_generated/kubereplay/v1alpha1"
 	"github.com/lwolf/kubereplay/pkg/constants"
@@ -18,6 +19,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -34,20 +36,10 @@ const (
 var (
 	initializerName string
 	annotation      string
-	external        bool
 	err             error
 	clusterConfig   *rest.Config
 	kubeconfig      string
 )
-
-func BlueGreenReplicas(n int32, segmentSize int32) (blueReplicas int32, greenReplicas int32) {
-	if segmentSize == 100 {
-		return n, 0
-	}
-	blueReplicas = n / segmentSize * 100
-	greenReplicas = n - blueReplicas
-	return
-}
 
 func GenerateSidecar(refinerySvc string, port uint32) *corev1.Container {
 	return &corev1.Container{
@@ -94,10 +86,16 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 				&metav1.LabelSelector{MatchLabels: deployment.ObjectMeta.GetLabels()},
 			)
 			var skip bool
-			harvesters, err := lister.Harvesters(deployment.Namespace).List(selector)
+			harvesters, err := lister.Harvesters(deployment.Namespace).List(labels.Everything())
 			if err != nil {
 				log.Printf("failed to get list of harvesters: %v", err)
 				skip = true
+			}
+			var harvester *v1alpha1.Harvester
+			for _, h := range harvesters {
+				if labels.Equals(h.Spec.Selector, deployment.ObjectMeta.GetLabels()) {
+					harvester = h
+				}
 			}
 
 			if len(harvesters) == 0 {
@@ -120,12 +118,10 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 				return nil
 			}
 
-			h := harvesters[0]
-
 			ownerReferences := []metav1.OwnerReference{
 				{
-					Name:       h.Name,
-					UID:        h.UID,
+					Name:       harvester.Name,
+					UID:        harvester.UID,
 					Kind:       "Harvester",
 					APIVersion: v1alpha1.SchemeGroupVersion.String(),
 				},
@@ -149,14 +145,14 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 			}
 
 			greenAnnotations := initializedDeploymentGreen.GetAnnotations()
-			blueReplicas, greenReplicas := BlueGreenReplicas(*deployment.Spec.Replicas, int32(h.Spec.SegmentSize))
-			log.Printf("current annotations: %v", greenAnnotations)
+			blueReplicas, greenReplicas := helpers.BlueGreenReplicas(*deployment.Spec.Replicas, int32(harvester.Spec.SegmentSize))
 			if greenAnnotations == nil {
 				greenAnnotations = make(map[string]string)
 			}
 			// set annotation for original deployment
 			greenAnnotations[constants.AnnotationKeyDefault] = constants.AnnotationValueSkip
-			greenAnnotations[constants.AnnotationKeyHarvester] = h.Name
+			greenAnnotations[constants.AnnotationKeyReplicas] = string(greenReplicas)
+			greenAnnotations[constants.AnnotationKeyShadow] = initializedDeploymentBlue.Name
 			initializedDeploymentGreen.ObjectMeta.OwnerReferences = ownerReferences
 			initializedDeploymentGreen.Annotations = greenAnnotations
 			initializedDeploymentGreen.Spec.Replicas = &greenReplicas
@@ -166,16 +162,17 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 				blueAnnotations = make(map[string]string)
 			}
 			blueAnnotations[constants.AnnotationKeyDefault] = constants.AnnotationValueCapture
-			blueAnnotations[constants.AnnotationKeyHarvester] = h.Name
+			blueAnnotations[constants.AnnotationKeyReplicas] = string(blueReplicas)
+			blueAnnotations[constants.AnnotationKeyShadow] = initializedDeploymentGreen.Name
 			initializedDeploymentBlue.ObjectMeta.OwnerReferences = ownerReferences
 			initializedDeploymentBlue.Annotations = blueAnnotations
 			initializedDeploymentBlue.Spec.Replicas = &blueReplicas
 			initializedDeploymentBlue.Status = v1beta1.DeploymentStatus{}
 
 			sidecar := GenerateSidecar(
-				fmt.Sprintf("refinery-%s.default", h.Spec.Refinery),
+				fmt.Sprintf("refinery-%s.default", harvester.Spec.Refinery),
 				// todo: remove port from harvester spec, get it directly from deployment
-				h.Spec.AppPort,
+				harvester.Spec.AppPort,
 			)
 
 			_, err = clientset.AppsV1beta1().Deployments(deployment.Namespace).Update(initializedDeploymentGreen)
@@ -198,13 +195,12 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 func main() {
 	flag.StringVar(&annotation, "annotation", constants.AnnotationKeyDefault, "The annotation to trigger initialization")
 	flag.StringVar(&initializerName, "initializer-name", defaultInitializerName, "The initializer name")
-	flag.BoolVar(&external, "external", false, "Run initializer using configmap")
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to kubeconfig")
 	flag.Parse()
 	log.Println("Starting the Kubernetes initializer...")
 	log.Printf("Initializer name set to: %s", initializerName)
 
-	if external {
+	if kubeconfig != "" {
 		kubeConfigLocation := filepath.Join(kubeconfig)
 		clusterConfig, err = clientcmd.BuildConfigFromFlags("", kubeConfigLocation)
 	} else {
