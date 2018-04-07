@@ -1,4 +1,4 @@
 FROM scratch
 COPY kubereplay-controller /
 ENTRYPOINT ["/kubereplay-controller"]
-CMD ["./controller-manager", "--install-crds=false"]
+CMD ["./controller-manager"]

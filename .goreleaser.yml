@@ -43,24 +43,6 @@ builds:
         goarch: arm
       - goos: darwin
         goarch: arm64
-  - binary: kubereplay-apiserver
-    main: ./cmd/apiserver/main.go
-    goos:
-#      - darwin
-      - linux
-    goarch:
-      - amd64
-#      - arm
-#      - arm64
-#    goarm:
-#       - 6
-#       - 7
-    ignore:
-      - goos: darwin
-        goarch: arm
-      - goos: darwin
-        goarch: arm64
-
 release:
   github:
     owner: lwolf
@@ -69,33 +51,20 @@ release:
   draft: true
 
 dockers:
-  - image: lwolf/kubereplay-apiserver
-    dockerfile: Dockerfile.apiserver
-    binary: kubereplay-apiserver
-    goos: linux
-    goarch: amd64
-    skip_push: false
-    tag_templates:
-    - "{{ .Tag }}"
-    - latest
-  - image: lwolf/kubereplay-controller
+  - image: lwolf/kubereplay-controller-amd64
     dockerfile: Dockerfile.controller
     binary: kubereplay-controller
     goos: linux
     goarch: amd64
-    skip_push: false
     tag_templates:
     - "{{ .Tag }}"
-    - latest
-  - image: lwolf/kubereplay-initializer
+  - image: lwolf/kubereplay-initializer-amd64
     dockerfile: Dockerfile.initializer
     binary: kubereplay-initializer
     goos: linux
     goarch: amd64
-    skip_push: false
     tag_templates:
     - "{{ .Tag }}"
-    - latest
 
 git:
   short_hash: true
