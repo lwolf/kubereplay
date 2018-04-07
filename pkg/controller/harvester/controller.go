@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"time"
-
 	"github.com/kubernetes-sigs/kubebuilder/pkg/builders"
 	extBeta "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,58 +21,45 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
-func (c *HarvesterControllerImpl) reconcileDeployment(green *extBeta.Deployment, blue *extBeta.Deployment, blueReplicas int32, greenReplicas int32) error {
+func (c *HarvesterControllerImpl) reconcileDeployment(green *extBeta.Deployment, blue *extBeta.Deployment, blueReplicas int32, greenReplicas int32){
 	log.Printf("reconciling deployment %s to %d/%d", green.Name, blueReplicas, greenReplicas)
 	if *blue.Spec.Replicas != blueReplicas {
 		log.Printf("blue replica needs reconcilation %d != %d", *blue.Spec.Replicas, blueReplicas)
 		deploy, err := c.cs.ExtensionsV1beta1().Deployments(blue.Namespace).Get(blue.Name, metav1.GetOptions{})
 		if err != nil {
 			log.Printf("failed to get scale for deployment %s: %v", blue.Name, err)
-			return err
 		}
 		deploy.Spec.Replicas = &blueReplicas
 		deploy.Annotations[constants.AnnotationKeyReplicas] = fmt.Sprintf("%d", blueReplicas)
-		//scale, err := c.cs.ExtensionsV1beta1().Deployments(blue.Namespace).GetScale(blue.Name, metav1.GetOptions{})
-		//scale.Spec.Replicas = blueReplicas
-		//_, err = c.cs.ExtensionsV1beta1().Deployments(blue.Namespace).UpdateScale(blue.Name, scale)
 		_, err = c.cs.ExtensionsV1beta1().Deployments(blue.Namespace).Update(deploy)
 		if err != nil {
 			log.Printf("failed to scale deployment %s to %d replicas: %v", blue.Name, blueReplicas, err)
-			return err
 		}
 	}
 	if *green.Spec.Replicas != greenReplicas {
 		log.Printf("green replica needs reconcilation %d != %d", *green.Spec.Replicas, greenReplicas)
-		//scale, err := c.cs.ExtensionsV1beta1().Deployments(green.Namespace).GetScale(green.Name, metav1.GetOptions{})
 		deploy, err := c.cs.ExtensionsV1beta1().Deployments(green.Namespace).Get(green.Name, metav1.GetOptions{})
 		if err != nil {
 			log.Printf("failed to get scale for deployment %s: %v", green.Name, err)
-			return err
 		}
 		deploy.Spec.Replicas = &greenReplicas
 		deploy.Annotations[constants.AnnotationKeyReplicas] = fmt.Sprintf("%d", greenReplicas)
-		//scale.Spec.Replicas = greenReplicas
-		//_, err = c.cs.ExtensionsV1beta1().Deployments(green.Namespace).UpdateScale(green.Name, scale)
 		_, err = c.cs.ExtensionsV1beta1().Deployments(green.Namespace).Update(deploy)
 		if err != nil {
 			log.Printf("failed to scale deployment %s to %d replicas: %v", green.Name, greenReplicas, err)
-			return err
 		}
 	}
-
-	return nil
 }
 
 // Reconcile handles enqueued messages
 func (c *HarvesterControllerImpl) Reconcile(u *v1alpha1.Harvester) error {
-	log.Printf("running reconcile Harvester for %s\n", u.Name)
+	log.Printf("running reconcile Harvester for %s", u.Name)
 
 	selector, err := metav1.LabelSelectorAsSelector(
 		&metav1.LabelSelector{MatchLabels: u.Spec.Selector},
 	)
 	deploys, err := c.extDeploymentLister.List(selector)
 	if err != nil {
-		log.Printf("failed to get list of deploys with labels")
 		return err
 	}
 	var forceReconcile bool
@@ -118,15 +103,11 @@ func (c *HarvesterControllerImpl) Reconcile(u *v1alpha1.Harvester) error {
 			blueReplicas, greenReplicas = helpers.BlueGreenReplicas(*d.Spec.Replicas, int32(u.Spec.SegmentSize))
 		}
 		log.Printf("new replicas count %d, %d", blueReplicas, greenReplicas)
-		err = c.reconcileDeployment(d, blue, blueReplicas, greenReplicas)
-		if err != nil {
-			log.Printf("failed to reconcile deployments %s: %v", d.Name, err)
-			continue
-		}
+		go c.reconcileDeployment(d, blue, blueReplicas, greenReplicas)
 	}
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		// Retrieve the latest version of Deployment before attempting update
+		// Retrieve the latest version of Harvester before attempting update
 		// RetryOnConflict uses exponential backoff to avoid exhausting the apiserver
 
 		result, getErr := c.Get(u.Namespace, u.Name)
@@ -188,10 +169,13 @@ func (c *HarvesterControllerImpl) ExtDeploymentToHarvesters(i interface{}) ([]st
 	}
 	for _, h := range harvesters {
 		if labels.Equals(d.Labels, h.Spec.Selector) {
+			a, ok := d.Annotations[constants.AnnotationKeyDefault]
+			if ok && a == constants.AnnotationValueCapture {
+				continue
+			}
 			return []string{d.Namespace + "/" + h.Name}, nil
 		}
 	}
 
-	log.Printf("%s: ExtDeploymentToHarvesters done processing ....", time.Now())
 	return []string{}, nil
 }

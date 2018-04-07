@@ -7,6 +7,7 @@ import (
 
 	"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
 	"github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	listers "github.com/lwolf/kubereplay/pkg/client/listers_generated/kubereplay/v1alpha1"
 	"github.com/lwolf/kubereplay/pkg/controller/sharedinformers"
 	"k8s.io/client-go/kubernetes"
@@ -18,33 +19,41 @@ import (
 // Reconcile handles enqueued messages
 func (c *RefineryControllerImpl) Reconcile(u *v1alpha1.Refinery) error {
 	log.Printf("Running reconcile Refinery for %s\n", u.Name)
-	if u.Status.Deployed == true {
-		log.Printf("Refinery %s already processed, skipping\n", u.Name)
-		return nil
-	}
 
-	deploymentsClient := c.cs.AppsV1().Deployments(u.Namespace)
-
+	sClient := c.cs.CoreV1().Services(u.Namespace)
 	service := GenerateService(u.Name, &u.Spec)
-	serviceClient := c.cs.CoreV1().Services(u.Namespace)
-	_, err := serviceClient.Create(service)
-	if err != nil {
-		log.Printf("Failed to create service: %v", err)
-		return err
+	svc, _ := sClient.Get(service.Name, metav1.GetOptions{})
+	if svc == nil {
+		_, err := sClient.Create(service)
+		if err != nil {
+			log.Printf("Failed to create service: %v", err)
+			return err
+		}
+	} else {
+		// TODO: compare deployed version to the new one, and update if needed
+		log.Printf("service %s/%s exists", service.Namespace, service.Name)
 	}
 
+	dClient := c.cs.AppsV1().Deployments(u.Namespace)
 	deployment := GenerateDeployment(u.Name, u)
-	// Create Deployment
-	log.Printf("Creating refinery deployment...")
-	result, err := deploymentsClient.Create(deployment)
-	if err != nil {
-		log.Printf("Failed to create deployment: %v", err)
-		return err
+	d, _ := dClient.Get(deployment.Name, metav1.GetOptions{})
+	if d == nil {
+		// Create Deployment
+		log.Printf("Creating refinery deployment...")
+		result, err := dClient.Create(deployment)
+
+		if err != nil {
+			log.Printf("Failed to create deployment: %v", err)
+			return err
+		}
+		log.Printf("Created deployment %q.\n", result.GetObjectMeta().GetName())
+	} else {
+		// TODO: compare deployed version to the new one, and update if needed
+		log.Printf("deployment %s/%s exists", deployment.Namespace, deployment.Name)
 	}
-	log.Printf("Created deployment %q.\n", result.GetObjectMeta().GetName())
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		// Retrieve the latest version of Deployment before attempting update
+		// Retrieve the latest version of Refinery before attempting update
 		// RetryOnConflict uses exponential backoff to avoid exhausting the apiserver
 
 		result, getErr := c.Get(u.Namespace, u.Name)
@@ -59,7 +68,6 @@ func (c *RefineryControllerImpl) Reconcile(u *v1alpha1.Refinery) error {
 		log.Printf("Update failed: %v", retryErr)
 		return retryErr
 	}
-	log.Printf("Deployment updated...")
 
 	return nil
 }
