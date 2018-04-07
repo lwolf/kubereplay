@@ -1,0 +1,100 @@
+# .goreleaser.yml
+# Build customization
+project_name: kubereplay
+
+#before:
+#  hooks:
+#   - go test ./pkg/...
+#   - go fmt
+#   - go vet
+
+builds:
+  - binary: kubereplay-controller
+    main: ./cmd/controller-manager/main.go
+    goos:
+#      - darwin
+      - linux
+    goarch:
+      - amd64
+#      - arm
+#      - arm64
+#    goarm:
+#       - 6
+#       - 7
+    ignore:
+      - goos: darwin
+        goarch: arm
+      - goos: darwin
+        goarch: arm64
+  - binary: kubereplay-initializer
+    main: ./cmd/initializer-controller/main.go
+    goos:
+#      - darwin
+      - linux
+    goarch:
+      - amd64
+#      - arm
+#      - arm64
+#    goarm:
+#       - 6
+#       - 7
+    ignore:
+      - goos: darwin
+        goarch: arm
+      - goos: darwin
+        goarch: arm64
+  - binary: kubereplay-apiserver
+    main: ./cmd/apiserver/main.go
+    goos:
+#      - darwin
+      - linux
+    goarch:
+      - amd64
+#      - arm
+#      - arm64
+#    goarm:
+#       - 6
+#       - 7
+    ignore:
+      - goos: darwin
+        goarch: arm
+      - goos: darwin
+        goarch: arm64
+
+release:
+  github:
+    owner: lwolf
+    name: kubereplay
+  prerelease: true
+  draft: true
+
+dockers:
+  - image: lwolf/kubereplay-apiserver
+    dockerfile: Dockerfile.apiserver
+    goos: linux
+    goarch: amd64
+    skip_push: false
+    tag_templates:
+    - "{{ .Tag }}"
+    - latest
+  - image: lwolf/kubereplay-controller
+    dockerfile: Dockerfile.controller
+    goos: linux
+    goarch: amd64
+    skip_push: false
+    tag_templates:
+    - "{{ .Tag }}"
+    - latest
+  - image: lwolf/kubereplay-initializer
+    dockerfile: Dockerfile.initializer
+    goos: linux
+    goarch: amd64
+    skip_push: false
+    tag_templates:
+    - "{{ .Tag }}"
+    - latest
+
+git:
+  short_hash: true
+
+# quay.io/user/repo

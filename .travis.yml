@@ -1,0 +1,15 @@
+# .travis.yml
+language: go
+
+# needed for the docker pipe
+services:
+- docker
+
+# calls goreleaser
+deploy:
+- provider: script
+  skip_cleanup: true
+  script: curl -sL http://git.io/goreleaser | bash
+  on:
+    tags: true
+    condition: $TRAVIS_OS_NAME = linux
