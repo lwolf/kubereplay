@@ -71,6 +71,7 @@ release:
 dockers:
   - image: lwolf/kubereplay-apiserver
     dockerfile: Dockerfile.apiserver
+    binary: kubereplay-apiserver
     goos: linux
     goarch: amd64
     skip_push: false
@@ -79,6 +80,7 @@ dockers:
     - latest
   - image: lwolf/kubereplay-controller
     dockerfile: Dockerfile.controller
+    binary: kubereplay-controller
     goos: linux
     goarch: amd64
     skip_push: false
@@ -87,6 +89,7 @@ dockers:
     - latest
   - image: lwolf/kubereplay-initializer
     dockerfile: Dockerfile.initializer
+    binary: kubereplay-initializer
     goos: linux
     goarch: amd64
     skip_push: false
