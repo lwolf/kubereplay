@@ -51,14 +51,14 @@ release:
   draft: true
 
 dockers:
-  - image: lwolf/kubereplay-controller-amd64
+  - image: quay.io/lwolf/kubereplay-controller-amd64
     dockerfile: Dockerfile.controller
     binary: kubereplay-controller
     goos: linux
     goarch: amd64
     tag_templates:
     - "{{ .Tag }}"
-  - image: lwolf/kubereplay-initializer-amd64
+  - image: quay.io/lwolf/kubereplay-initializer-amd64
     dockerfile: Dockerfile.initializer
     binary: kubereplay-initializer
     goos: linux
@@ -68,5 +68,3 @@ dockers:
 
 git:
   short_hash: true
-
-# quay.io/user/repo
