@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/lwolf/kubereplay.svg?branch=master)](https://travis-ci.org/lwolf/kubereplay)
+[![Docker Repository on Quay](https://quay.io/repository/lwolf/kubereplay-controller-amd64/status "Docker Repository on Quay")](https://quay.io/repository/lwolf/kubereplay-controller-amd64)
 
 # kubereplay
 
