@@ -11,6 +11,25 @@ This is an early alpha version. It is *not* meant to run in production.
 
 # Quickstart
 
+```
+# start minikube with Admission capabilities
+$ minikube start --extra-config=apiserver.Admission.PluginNames="Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota"
+
+# start kubereplay controller manager in one console
+$ kubebuilder run local
+
+# start initializer controller in the second
+$ go run cmd/initializer-controller/main.go --kubeconfig=/Users/lwolf/.kube/config
+
+# add initializer config
+$ kubect create -f samle/initializer-configuration.yaml
+
+# create harvester, refinery and test deployment
+$ kubectl create -f sample/harvester.yaml
+$ kubectl create -f sample/refinery.yaml
+$ kubectl create -f sample/echoserver.yaml
+```
+
 ## Pre-requisites
 
 ## Deploying kubereplay
