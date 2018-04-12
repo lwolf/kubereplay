@@ -1,0 +1,6 @@
+apiVersion: kubereplay.lwolf.org/v1alpha1
+kind: Harvester
+metadata:
+  name: harvester-example
+spec:
+  foo: bar

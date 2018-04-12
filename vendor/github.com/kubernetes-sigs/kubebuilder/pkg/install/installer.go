@@ -19,6 +19,7 @@ package install
 import (
 	"log"
 	"reflect"
+	"time"
 
 	apiextv1beta1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +29,6 @@ import (
 	rbacv1client "k8s.io/client-go/kubernetes/typed/rbac/v1"
 	"k8s.io/client-go/rest"
 	apiregistrationv1beta1 "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/typed/apiregistration/v1beta1"
-	"time"
 )
 
 type installer struct {
@@ -39,7 +39,7 @@ type installer struct {
 	apireg apiregistrationv1beta1.APIServiceInterface
 }
 
-// NewInstaller returns a new Installer
+// NewInstaller returns a new installer
 func NewInstaller(config *rest.Config) *installer {
 	cs := kubernetes.NewForConfigOrDie(config)
 	ae := apiextv1beta1client.NewForConfigOrDie(config)
@@ -53,11 +53,7 @@ func NewInstaller(config *rest.Config) *installer {
 	}
 }
 
-// Install installs the following components using the InstallStrategy
-// - Namespace for the controller-manager
-// - ClusterRole providing RBAC to the controller-manager
-// - ClusterRoleBinding providing RBAC to the controller-manager
-// - Deployment for the controller-manager
+// Install installs the components provided by the InstallStrategy
 func (i *installer) Install(strategy InstallStrategy) error {
 	if err := strategy.BeforeInstall(); err != nil {
 		return err
@@ -111,7 +107,7 @@ func (i *installer) installCrds(strategy InstallStrategy) error {
 		// Create case
 		if err != nil || value == nil {
 			log.Printf("Creating CRD %v\n", crd.Name)
-			_, err = i.apiext.Create(&crd)
+			_, err = i.apiext.Create(crd)
 			if err != nil {
 				return err
 			}

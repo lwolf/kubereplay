@@ -23,8 +23,9 @@ import (
 	. "github.com/onsi/ginkgo/types"
 )
 
-// Print a newline after the default Reporter due to issue
-// https://github.com/jstemmer/go-junit-report/issues/31
+// Print a newline after the default Reporter output so that the results are correctly parsed
+// by test automation.
+// See issue https://github.com/jstemmer/go-junit-report/issues/31
 type NewlineReporter struct{}
 
 func (NewlineReporter) SpecSuiteWillBegin(config GinkgoConfigType, summary *SuiteSummary) {}

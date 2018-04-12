@@ -11,9 +11,9 @@ import (
 
 	"github.com/lwolf/kubereplay/helpers"
 	"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
-	v1alpha1lister "github.com/lwolf/kubereplay/pkg/client/listers_generated/kubereplay/v1alpha1"
-	"github.com/lwolf/kubereplay/pkg/constants"
-	"github.com/lwolf/kubereplay/pkg/controller/sharedinformers"
+	kubereplayv1alpha1lister "github.com/lwolf/kubereplay/pkg/client/listers/kubereplay/v1alpha1"
+	"github.com/lwolf/kubereplay/pkg/client/informers/externalversions"
+	"github.com/lwolf/kubereplay/pkg/client/clientset/versioned"
 	"github.com/mohae/deepcopy"
 	"k8s.io/api/apps/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"path/filepath"
+	"github.com/lwolf/kubereplay/constants"
 )
 
 const (
@@ -66,7 +67,7 @@ func createShadowDeployment(d *v1beta1.Deployment, clientset *kubernetes.Clients
 
 }
 
-func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.Clientset, lister v1alpha1lister.HarvesterLister) error {
+func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.Clientset, lister kubereplayv1alpha1lister.HarvesterLister) error {
 	if deployment.ObjectMeta.GetInitializers() != nil {
 		pendingInitializers := deployment.ObjectMeta.GetInitializers().Pending
 		if initializerName == pendingInitializers[0].Name {
@@ -208,7 +209,6 @@ func main() {
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-
 	}
 
 	clientset, err := kubernetes.NewForConfig(clusterConfig)
@@ -221,12 +221,13 @@ func main() {
 	watchlist := cache.NewListWatchFromClient(restClient, "deployments", corev1.NamespaceAll, fields.Everything())
 
 	stop := make(chan struct{})
+	cl := versioned.NewForConfigOrDie(clusterConfig)
+	si := externalversions.NewSharedInformerFactory(cl, 30*time.Second)
+	go si.Kubereplay().V1alpha1().Harvesters().Informer().Run(stop)
+	si.WaitForCacheSync(stop)
 
-	si := sharedinformers.NewSharedInformers(clusterConfig, stop)
-	go si.Factory.Kubereplay().V1alpha1().Harvesters().Informer().Run(stop)
-	si.Factory.WaitForCacheSync(stop)
 
-	lister := si.Factory.Kubereplay().V1alpha1().Harvesters().Lister()
+	lister := si.Kubereplay().V1alpha1().Harvesters().Lister()
 
 	// Wrap the returned watchlist to workaround the inability to include
 	// the `IncludeUninitialized` list option when setting up watch clients.
@@ -253,9 +254,7 @@ func main() {
 			},
 		},
 	)
-
 	go controller.Run(stop)
-
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 	<-signalChan

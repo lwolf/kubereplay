@@ -30,16 +30,27 @@ import (
 	"sync"
 )
 
-// DefaultInstallStrategy is a default implementation of InstallStrategy
+// ApiserverInstallStrategy installs APIs using apiserver aggregation.  Creates a StatefulSet for
+// etcd storage.
 type ApiserverInstallStrategy struct {
-	// Name is the
-	Name                   string
-	ApiserverImage         string
+	// Name is the name of the installation
+	Name string
+
+	// ApiserverImage is the container image for the aggregated apiserver
+	ApiserverImage string
+
+	// ControllerManagerImage is the container image to use for the controller
 	ControllerManagerImage string
-	DocsImage              string
-	APIMeta                APIMeta
-	Certs                  *Certs
-	certOnce               sync.Once
+
+	// DocsImage is the container image to use for hosting reference documentation
+	DocsImage string
+
+	// APIMeta contains the generated API metadata from the pkg/apis
+	APIMeta APIMeta
+
+	// Certs are the certs for installing the aggregated apiserver
+	Certs    *Certs
+	certOnce sync.Once
 }
 
 // GetServiceAccount returns the default ServiceAccount
@@ -59,13 +70,13 @@ func (s *ApiserverInstallStrategy) GetNamespace() *corev1.Namespace {
 	return ns
 }
 
-// GetClusterRole returns a ClusterRule with the generated rules by APIMeta.GetRules
+// GetClusterRole returns a ClusterRule with the generated rules by APIMeta.GetPolicyRules
 func (s *ApiserverInstallStrategy) GetClusterRole() *rbacv1.ClusterRole {
 	ns := s.GetNamespace()
 	role := &rbacv1.ClusterRole{}
 	role.Namespace = ns.Name
 	role.Name = fmt.Sprintf("%v-role", ns.Name)
-	role.Rules = s.APIMeta.GetRules()
+	role.Rules = s.APIMeta.GetPolicyRules()
 	role.Rules = append(role.Rules,
 		rbacv1.PolicyRule{
 			APIGroups: []string{""},
@@ -107,7 +118,7 @@ func (s *ApiserverInstallStrategy) GetClusterRoleBinding() *rbacv1.ClusterRoleBi
 
 // GetDeployments returns a Deployment to run the Image
 func (s *ApiserverInstallStrategy) GetDeployments() []*appsv1.Deployment {
-	// Controller Manager
+	// Controller ControllerManager
 	controllerManager := &appsv1.Deployment{}
 	controllerManager.Namespace = fmt.Sprintf("%v-system", s.Name)
 	controllerManager.Name = fmt.Sprintf("%v-controller-manager", s.Name)

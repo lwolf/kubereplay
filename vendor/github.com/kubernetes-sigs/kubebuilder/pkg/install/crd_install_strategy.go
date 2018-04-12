@@ -29,13 +29,19 @@ import (
 	apiregistrationv1beta1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 )
 
-// DefaultInstallStrategy is a default implementation of InstallStrategy
+// CRDInstallStrategy installs APIs into a cluster using CRDs
 type CRDInstallStrategy struct {
-	// Name is the
-	Name                   string
+	// Name is the installation
+	Name string
+
+	// ControllerManagerImage is the container image to use for the controller
 	ControllerManagerImage string
-	DocsImage              string
-	APIMeta                APIMeta
+
+	// DocsImage is the container image to use for hosting reference documentation
+	DocsImage string
+
+	// APIMeta contains the generated API metadata from the pkg/apis
+	APIMeta APIMeta
 }
 
 // GetServiceAccount returns the default ServiceAccount
@@ -44,7 +50,7 @@ func (s *CRDInstallStrategy) GetServiceAccount() string {
 }
 
 // GetCRDs returns the generated CRDs from APIMeta.GetCRDs()
-func (s *CRDInstallStrategy) GetCRDs() []extensionsv1beta1.CustomResourceDefinition {
+func (s *CRDInstallStrategy) GetCRDs() []*extensionsv1beta1.CustomResourceDefinition {
 	return s.APIMeta.GetCRDs()
 }
 
@@ -55,13 +61,13 @@ func (s *CRDInstallStrategy) GetNamespace() *corev1.Namespace {
 	return ns
 }
 
-// GetClusterRole returns a ClusterRule with the generated rules by APIMeta.GetRules
+// GetClusterRole returns a ClusterRule with the generated rules by APIMeta.GetPolicyRules
 func (s *CRDInstallStrategy) GetClusterRole() *rbacv1.ClusterRole {
 	ns := s.GetNamespace()
 	role := &rbacv1.ClusterRole{}
 	role.Namespace = ns.Name
 	role.Name = fmt.Sprintf("%v-role", ns.Name)
-	role.Rules = s.APIMeta.GetRules()
+	role.Rules = s.APIMeta.GetPolicyRules()
 	return role
 }
 

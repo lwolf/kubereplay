@@ -35,6 +35,78 @@ import (
 	//"time"
 )
 
+// Certs contains the certificate information for installing APIs
+type Certs struct {
+	// ClientKey is the client private key
+	ClientKey []byte
+
+	// CACrt is the public CA certificate
+	CACrt []byte
+
+	// ClientCrt is the public client certificate
+	ClientCrt []byte
+}
+
+// CreateCerts creates Certs to be used for registering webhooks and extension apis in a
+// Kubernetes apiserver
+func CreateCerts(serviceName, serviceNamespace string) *Certs {
+	dir := os.TempDir()
+
+	openssl("req", "-x509",
+		"-newkey", "rsa:2048",
+		"-keyout", filepath.Join(dir, "apiserver_ca.key"),
+		"-out", filepath.Join(dir, "apiserver_ca.crt"),
+		"-days", "365",
+		"-nodes",
+		"-subj", fmt.Sprintf("/C=un/ST=st/L=l/O=o/OU=ou/CN=%s-certificate-authority", serviceName),
+	)
+
+	// Use <service-Name>.<Namespace>.svc as the domain Name for the certificate
+	openssl("req",
+		"-out", filepath.Join(dir, "apiserver.csr"),
+		"-new",
+		"-newkey", "rsa:2048",
+		"-nodes",
+		"-keyout", filepath.Join(dir, "apiserver.key"),
+		"-subj", fmt.Sprintf("/C=un/ST=st/L=l/O=o/OU=ou/CN=%s.%s.svc", serviceName, serviceNamespace),
+	)
+
+	openssl("x509", "-req",
+		"-days", "365",
+		"-in", filepath.Join(dir, "apiserver.csr"),
+		"-CA", filepath.Join(dir, "apiserver_ca.crt"),
+		"-CAkey", filepath.Join(dir, "apiserver_ca.key"),
+		"-CAcreateserial",
+		"-out", filepath.Join(dir, "apiserver.crt"),
+	)
+	cert := &Certs{}
+	var err error
+	cert.CACrt, err = ioutil.ReadFile(filepath.Join(dir, "apiserver_ca.crt"))
+	if err != nil {
+		log.Fatalf("read %s failed %v", filepath.Join(dir, "apiserver_ca.crt"), err)
+	}
+	cert.ClientKey, err = ioutil.ReadFile(filepath.Join(dir, "apiserver.key"))
+	if err != nil {
+		log.Fatalf("read %s failed %v", filepath.Join(dir, "apiserver.key"), err)
+	}
+	cert.ClientCrt, err = ioutil.ReadFile(filepath.Join(dir, "apiserver.crt"))
+	if err != nil {
+		log.Fatalf("read %s failed %v", filepath.Join(dir, "apiserver.crt"), err)
+	}
+	return cert
+}
+
+func openssl(args ...string) {
+	c := exec.Command("openssl", args...)
+	c.Stderr = os.Stderr
+	c.Stdout = os.Stdout
+	log.Printf("%s\n", strings.Join(c.Args, " "))
+	err := c.Run()
+	if err != nil {
+		log.Fatalf("command failed %v", err)
+	}
+}
+
 //type Cert struct {
 //	Email string
 //	DNS   string
@@ -100,67 +172,3 @@ import (
 //
 //	return pemBytes.Bytes(), keyBytes.Bytes()
 //}
-
-type Certs struct {
-	ClientKey []byte
-	CACrt     []byte
-	ClientCrt []byte
-}
-
-func CreateCerts(serviceName, serviceNamespace string) *Certs {
-	dir := os.TempDir()
-
-	openssl("req", "-x509",
-		"-newkey", "rsa:2048",
-		"-keyout", filepath.Join(dir, "apiserver_ca.key"),
-		"-out", filepath.Join(dir, "apiserver_ca.crt"),
-		"-days", "365",
-		"-nodes",
-		"-subj", fmt.Sprintf("/C=un/ST=st/L=l/O=o/OU=ou/CN=%s-certificate-authority", serviceName),
-	)
-
-	// Use <service-Name>.<Namespace>.svc as the domain Name for the certificate
-	openssl("req",
-		"-out", filepath.Join(dir, "apiserver.csr"),
-		"-new",
-		"-newkey", "rsa:2048",
-		"-nodes",
-		"-keyout", filepath.Join(dir, "apiserver.key"),
-		"-subj", fmt.Sprintf("/C=un/ST=st/L=l/O=o/OU=ou/CN=%s.%s.svc", serviceName, serviceNamespace),
-	)
-
-	openssl("x509", "-req",
-		"-days", "365",
-		"-in", filepath.Join(dir, "apiserver.csr"),
-		"-CA", filepath.Join(dir, "apiserver_ca.crt"),
-		"-CAkey", filepath.Join(dir, "apiserver_ca.key"),
-		"-CAcreateserial",
-		"-out", filepath.Join(dir, "apiserver.crt"),
-	)
-	cert := &Certs{}
-	var err error
-	cert.CACrt, err = ioutil.ReadFile(filepath.Join(dir, "apiserver_ca.crt"))
-	if err != nil {
-		log.Fatalf("read %s failed %v", filepath.Join(dir, "apiserver_ca.crt"), err)
-	}
-	cert.ClientKey, err = ioutil.ReadFile(filepath.Join(dir, "apiserver.key"))
-	if err != nil {
-		log.Fatalf("read %s failed %v", filepath.Join(dir, "apiserver.key"), err)
-	}
-	cert.ClientCrt, err = ioutil.ReadFile(filepath.Join(dir, "apiserver.crt"))
-	if err != nil {
-		log.Fatalf("read %s failed %v", filepath.Join(dir, "apiserver.crt"), err)
-	}
-	return cert
-}
-
-func openssl(args ...string) {
-	c := exec.Command("openssl", args...)
-	c.Stderr = os.Stderr
-	c.Stdout = os.Stdout
-	log.Printf("%s\n", strings.Join(c.Args, " "))
-	err := c.Run()
-	if err != nil {
-		log.Fatalf("command failed %v", err)
-	}
-}
