@@ -10,6 +10,20 @@ Kubereplay aims to make integration of [Goreplay](https://github.com/buger/gorep
 
 This is an early alpha version. It is *not* meant to run in production.
 
+# About
+
+Kubereplay is Kubernetes add-on to automate capturing and redirection of traffic using [Goreplay](https://github.com/buger/goreplay).
+It consist of 2 parts that need to run in the cluster - controller-manager and initializer-controller.
+
+## How it works:
+
+Kubereplay creates and manage 2 CRDs: Harvesters and Refineries.
+
+Harvester - ...
+
+Refinery - ...
+
+
 # Quickstart
 
 ```
@@ -40,9 +54,17 @@ $ kubectl create -f sample/echoserver.yaml
 
 # Troubleshooting
 
+If you encounter any issues while using Kubereplay, and your issue is not documented, please file an [issue](https://github.com/lwolf/kubereplay/issues).
 
 # Contributing
 
+All kinds of contributions are very much welcome!
+
+* Fork it
+* Create your feature branch (git checkout -b my-new-feature)
+* Commit your changes (git commit -am 'Added some feature')
+* Push to the branch (git push origin my-new-feature)
+* Create new Pull Request
 
 # Changelog
 The list of [releases](https://github.com/lwolf/kubereplay/releases) is the best place to look for information on changes between releases.

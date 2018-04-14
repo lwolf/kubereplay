@@ -15,7 +15,6 @@ import (
 	"github.com/lwolf/kubereplay/pkg/client/clientset/versioned"
 	"github.com/lwolf/kubereplay/pkg/client/informers/externalversions"
 	kubereplayv1alpha1lister "github.com/lwolf/kubereplay/pkg/client/listers/kubereplay/v1alpha1"
-	"github.com/mohae/deepcopy"
 	"k8s.io/api/apps/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -73,8 +72,7 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 		if initializerName == pendingInitializers[0].Name {
 			log.Printf("Initializing deployment: %s", deployment.Name)
 
-			green := deepcopy.Copy(deployment)
-			initializedDeploymentGreen := green.(*v1beta1.Deployment)
+			initializedDeploymentGreen := deployment.DeepCopy()
 
 			// Remove self from the list of pending Initializers while preserving ordering.
 			if len(pendingInitializers) == 1 {
