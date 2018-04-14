@@ -12,6 +12,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+func AppLabels(name string) map[string]string {
+	return map[string]string{
+		"kubereplay-app": name,
+	}
+}
+
 func fileSiloToArgs(spec *kubereplayv1alpha1.FileSilo) *[]string {
 	var args []string
 	if spec.Filename == "" {
@@ -122,23 +128,19 @@ func GenerateService(name string, spec *kubereplayv1alpha1.RefinerySpec) *apiv1.
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("refinery-%s", name),
 			Namespace: "default",
-			Labels: map[string]string{
-				"kubereplay-app": name,
-			},
+			Labels:    AppLabels(name),
 		},
 		Spec: apiv1.ServiceSpec{
 			Ports: []apiv1.ServicePort{
 				{
-					Name:       "gor",
+					Name:       "goreplay",
 					Protocol:   apiv1.ProtocolTCP,
 					Port:       28020,
 					TargetPort: intstr.FromInt(28020),
 				},
 			},
-			Selector: map[string]string{
-				"kubereplay-app": name,
-			},
-			Type: apiv1.ServiceTypeClusterIP,
+			Selector: AppLabels(name),
+			Type:     apiv1.ServiceTypeClusterIP,
 		},
 	}
 }
@@ -205,22 +207,16 @@ func GenerateDeployment(name string, r *kubereplayv1alpha1.Refinery) *appsv1.Dep
 		ObjectMeta: metav1.ObjectMeta{
 			OwnerReferences: ownerReferences,
 			Name:            fmt.Sprintf("refinery-%s", name),
-			Labels: map[string]string{
-				"kubereplay-app": name,
-			},
+			Labels:          AppLabels(name),
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: int32Ptr(1),
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"kubereplay-app": name,
-				},
+				MatchLabels: AppLabels(name),
 			},
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"kubereplay-app": name,
-					},
+					Labels: AppLabels(name),
 				},
 				Spec: apiv1.PodSpec{
 					Containers: []apiv1.Container{

@@ -51,8 +51,8 @@ func (bc *RefineryController) Reconcile(k types.ReconcileKey) error {
 
 	sClient := bc.kubernetesclient.CoreV1().Services(r.Namespace)
 	service := helpers.GenerateService(r.Name, &r.Spec)
-	svc, _ := sClient.Get(service.Name, metav1.GetOptions{})
-	if svc == nil {
+	_, err = sClient.Get(service.Name, metav1.GetOptions{})
+	if errors.IsNotFound(err) {
 		_, err := sClient.Create(service)
 		if err != nil {
 			log.Printf("Failed to create service: %v", err)
@@ -145,8 +145,7 @@ func ProvideController(arguments args.InjectArgs) (*controller.GenericController
 	if err := gc.Watch(&kubereplayv1alpha1.Refinery{}); err != nil {
 		return gc, err
 	}
-	// INSERT ADDITIONAL WATCHES HERE BY CALLING gc.Watch.*() FUNCTIONS
-	// NOTE: Informers for Kubernetes resources *MUST* be registered in the pkg/inject package so that they are started.
+
 	if err := gc.WatchControllerOf(&appsv1.Deployment{}, eventhandlers.Path{bc.Lookup},
 		predicates.ResourceVersionChanged); err != nil {
 		return gc, err

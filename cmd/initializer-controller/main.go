@@ -99,7 +99,7 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 				}
 			}
 
-			if len(harvesters) == 0 {
+			if harvester == nil {
 				log.Printf("debug: harvesters not found for deployment %s with selectors %v", deployment.Name, selector)
 				skip = true
 			}
