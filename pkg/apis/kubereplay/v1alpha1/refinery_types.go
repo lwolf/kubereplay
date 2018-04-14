@@ -1,10 +1,7 @@
-
-
-
 package v1alpha1
 
 import (
-    metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // EDIT THIS FILE!
@@ -14,61 +11,61 @@ import (
 
 // RefinerySpec defines the desired state of Refinery
 type RefinerySpec struct {
-    Workers int32            `json:"workers,omitempчty"`
-    Timeout string           `json:"timeout,omitempty"`
-    Storage *RefineryStorage `json:"output,omitempty"`
+	Workers int32            `json:"workers,omitempчty"`
+	Timeout string           `json:"timeout,omitempty"`
+	Storage *RefineryStorage `json:"output,omitempty"`
 }
 
 // RefineryStatus defines various storages available for Refinery
 type RefineryStorage struct {
-    File          *FileSilo          `json:"file,omitempty"`
-    Tcp           *TcpSilo           `json:"tcp,omitempty"`
-    Stdout        *StdoutSilo        `json:"stdout,omitempty"`
-    Http          *HttpSilo          `json:"http,omitempty"`
-    Elasticsearch *ElasticsearchSilo `json:"elasticsearch,omitempty"`
-    Kafka         *KafkaSilo         `json:"kafka,omitempty"`
+	File          *FileSilo          `json:"file,omitempty"`
+	Tcp           *TcpSilo           `json:"tcp,omitempty"`
+	Stdout        *StdoutSilo        `json:"stdout,omitempty"`
+	Http          *HttpSilo          `json:"http,omitempty"`
+	Elasticsearch *ElasticsearchSilo `json:"elasticsearch,omitempty"`
+	Kafka         *KafkaSilo         `json:"kafka,omitempty"`
 }
 
 type FileSilo struct {
-    Enabled       bool   `json:"enabled,omitempty"`
-    Filename      string `json:"filename,omitempty"`
-    Append        bool   `json:"append,omitempty"`
-    FlushInterval string `json:"flushinterval,omitempty"`
-    QueueSize     int32  `json:"queuesize,omitempty"`
-    FileLimit     string `json:"filelimit,omitempty"`
+	Enabled       bool   `json:"enabled,omitempty"`
+	Filename      string `json:"filename,omitempty"`
+	Append        bool   `json:"append,omitempty"`
+	FlushInterval string `json:"flushinterval,omitempty"`
+	QueueSize     int32  `json:"queuesize,omitempty"`
+	FileLimit     string `json:"filelimit,omitempty"`
 }
 
 type TcpSilo struct {
-    Enabled bool   `json:"enabled,omitempty"`
-    Uri     string `json:"uri,omitempty"`
+	Enabled bool   `json:"enabled,omitempty"`
+	Uri     string `json:"uri,omitempty"`
 }
 
 type StdoutSilo struct {
-    Enabled bool `json:"enabled,omitempty"`
+	Enabled bool `json:"enabled,omitempty"`
 }
 
 type HttpSilo struct {
-    Enabled        bool   `json:"enabled,omitempty"`
-    Uri            string `json:"uri,omitempty"`
-    Debug          bool   `json:"debug,omitempty"`
-    ResponseBuffer int    `json:"response_buffer,omitempty"`
+	Enabled        bool   `json:"enabled,omitempty"`
+	Uri            string `json:"uri,omitempty"`
+	Debug          bool   `json:"debug,omitempty"`
+	ResponseBuffer int    `json:"response_buffer,omitempty"`
 }
 
 type ElasticsearchSilo struct {
-    Enabled bool   `json:"enabled,omitempty"`
-    Uri     string `json:"uri,omitempty"`
+	Enabled bool   `json:"enabled,omitempty"`
+	Uri     string `json:"uri,omitempty"`
 }
 
 type KafkaSilo struct {
-    Enabled bool   `json:"enabled,omitempty"`
-    Uri     string `json:"uri,omitempty"`
-    Json    bool   `json:"json,omitempty"`
-    Topic   string `json:"topic,omitempty"`
+	Enabled bool   `json:"enabled,omitempty"`
+	Uri     string `json:"uri,omitempty"`
+	Json    bool   `json:"json,omitempty"`
+	Topic   string `json:"topic,omitempty"`
 }
 
 // RefineryStatus defines the observed state of Refinery
 type RefineryStatus struct {
-    Deployed bool `json:"deployed,omitempty"`
+	Deployed bool `json:"deployed,omitempty"`
 }
 
 // +genclient
@@ -78,9 +75,9 @@ type RefineryStatus struct {
 // +k8s:openapi-gen=true
 // +resource:path=refineries
 type Refinery struct {
-    metav1.TypeMeta   `json:",inline"`
-    metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-    Spec   RefinerySpec   `json:"spec,omitempty"`
-    Status RefineryStatus `json:"status,omitempty"`
+	Spec   RefinerySpec   `json:"spec,omitempty"`
+	Status RefineryStatus `json:"status,omitempty"`
 }

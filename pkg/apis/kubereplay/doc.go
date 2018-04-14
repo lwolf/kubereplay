@@ -1,7 +1,3 @@
-
-
-
-
 // +k8s:deepcopy-gen=package,register
 // +groupName=kubereplay.lwolf.org
 

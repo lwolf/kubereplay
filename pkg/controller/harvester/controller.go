@@ -1,32 +1,31 @@
 package harvester
 
 import (
-    "fmt"
-    "log"
-    "strconv"
+	"fmt"
+	"log"
+	"strconv"
 
-    "github.com/kubernetes-sigs/kubebuilder/pkg/controller"
-    "github.com/kubernetes-sigs/kubebuilder/pkg/controller/types"
+	"github.com/kubernetes-sigs/kubebuilder/pkg/controller"
+	"github.com/kubernetes-sigs/kubebuilder/pkg/controller/types"
 
-    kubereplayv1alpha1 "github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
-    kubereplayv1alpha1client "github.com/lwolf/kubereplay/pkg/client/clientset/versioned/typed/kubereplay/v1alpha1"
-	kubereplayv1alpha1informer "github.com/lwolf/kubereplay/pkg/client/informers/externalversions/kubereplay/v1alpha1"
-	kubereplayv1alpha1lister "github.com/lwolf/kubereplay/pkg/client/listers/kubereplay/v1alpha1"
-    metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	appsv1beta "k8s.io/api/apps/v1"
-    appsv1lister "k8s.io/client-go/listers/apps/v1"
-    "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/util/retry"
+	"github.com/kubernetes-sigs/kubebuilder/pkg/controller/eventhandlers"
+	"github.com/kubernetes-sigs/kubebuilder/pkg/controller/predicates"
 	"github.com/lwolf/kubereplay/constants"
 	"github.com/lwolf/kubereplay/helpers"
+	kubereplayv1alpha1 "github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
+	kubereplayv1alpha1client "github.com/lwolf/kubereplay/pkg/client/clientset/versioned/typed/kubereplay/v1alpha1"
+	kubereplayv1alpha1informer "github.com/lwolf/kubereplay/pkg/client/informers/externalversions/kubereplay/v1alpha1"
+	kubereplayv1alpha1lister "github.com/lwolf/kubereplay/pkg/client/listers/kubereplay/v1alpha1"
 	"github.com/lwolf/kubereplay/pkg/inject/args"
-    "k8s.io/client-go/tools/record"
-    "github.com/kubernetes-sigs/kubebuilder/pkg/controller/eventhandlers"
-    "github.com/kubernetes-sigs/kubebuilder/pkg/controller/predicates"
+	appsv1beta "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	appsv1lister "k8s.io/client-go/listers/apps/v1"
+	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/retry"
 )
 
 const controllerAgentName = "kubereplay-harvester-controller"
-
 
 func (bc *HarvesterController) reconcileDeployment(green *appsv1beta.Deployment, blue *appsv1beta.Deployment, blueReplicas int32, greenReplicas int32) {
 	log.Printf("reconciling deployment %s v1to %d/%d", green.Name, blueReplicas, greenReplicas)
@@ -63,8 +62,8 @@ func (bc *HarvesterController) Reconcile(k types.ReconcileKey) error {
 	log.Printf("running reconcile Harvester for %s", k.Name)
 	h, err := bc.Get(k.Namespace, k.Name)
 	if err != nil {
-	    return err
-    }
+		return err
+	}
 
 	selector, err := metav1.LabelSelectorAsSelector(
 		&metav1.LabelSelector{MatchLabels: h.Spec.Selector},
@@ -139,8 +138,8 @@ func (bc *HarvesterController) Reconcile(k types.ReconcileKey) error {
 	return nil
 }
 
-func (bc *HarvesterController) Lookup(k types.ReconcileKey) (interface{}, error){
-    return bc.harvesterLister.Harvesters(k.Namespace).Get(k.Name)
+func (bc *HarvesterController) Lookup(k types.ReconcileKey) (interface{}, error) {
+	return bc.harvesterLister.Harvesters(k.Namespace).Get(k.Name)
 }
 
 func (bc *HarvesterController) Get(namespace, name string) (*kubereplayv1alpha1.Harvester, error) {
@@ -151,26 +150,26 @@ func (bc *HarvesterController) Get(namespace, name string) (*kubereplayv1alpha1.
 // +informers:group=apps,version=v1,kind=Deployment
 // +rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 type HarvesterController struct {
-    args.InjectArgs
+	args.InjectArgs
 	harvesterLister kubereplayv1alpha1lister.HarvesterLister
 	harvesterclient kubereplayv1alpha1client.KubereplayV1alpha1Interface
 
 	deploymentLister appsv1lister.DeploymentLister
 	kubernetesclient *kubernetes.Clientset
 
-    recorder record.EventRecorder
+	recorder record.EventRecorder
 }
 
 // ProvideController provides a controller that will be run at startup.  Kubebuilder will use codegeneration
 // to automatically register this controller in the inject package
 func ProvideController(arguments args.InjectArgs) (*controller.GenericController, error) {
-    bc := &HarvesterController{
-        InjectArgs: arguments,
-		harvesterLister: arguments.ControllerManager.GetInformerProvider(&kubereplayv1alpha1.Harvester{}).(kubereplayv1alpha1informer.HarvesterInformer).Lister(),
-		harvesterclient: arguments.Clientset.KubereplayV1alpha1(),
-        deploymentLister: arguments.KubernetesInformers.Apps().V1().Deployments().Lister(),
-        kubernetesclient: arguments.KubernetesClientSet,
-        recorder: arguments.CreateRecorder(controllerAgentName),
+	bc := &HarvesterController{
+		InjectArgs:       arguments,
+		harvesterLister:  arguments.ControllerManager.GetInformerProvider(&kubereplayv1alpha1.Harvester{}).(kubereplayv1alpha1informer.HarvesterInformer).Lister(),
+		harvesterclient:  arguments.Clientset.KubereplayV1alpha1(),
+		deploymentLister: arguments.KubernetesInformers.Apps().V1().Deployments().Lister(),
+		kubernetesclient: arguments.KubernetesClientSet,
+		recorder:         arguments.CreateRecorder(controllerAgentName),
 	}
 
 	// Create a new controller that will call HarvesterController.Reconcile on changes to Harvesters
@@ -185,9 +184,9 @@ func ProvideController(arguments args.InjectArgs) (*controller.GenericController
 
 	// INSERT ADDITIONAL WATCHES HERE BY CALLING gc.Watch.*() FUNCTIONS
 	// NOTE: Informers for Kubernetes resources *MUST* be registered in the pkg/inject package so that they are started.
-    if err := gc.WatchControllerOf(&appsv1beta.Deployment{}, eventhandlers.Path{bc.Lookup},
-        predicates.ResourceVersionChanged); err != nil {
-        return gc, err
-    }
+	if err := gc.WatchControllerOf(&appsv1beta.Deployment{}, eventhandlers.Path{bc.Lookup},
+		predicates.ResourceVersionChanged); err != nil {
+		return gc, err
+	}
 	return gc, nil
 }

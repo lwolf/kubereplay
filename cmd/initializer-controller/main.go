@@ -9,11 +9,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/lwolf/kubereplay/constants"
 	"github.com/lwolf/kubereplay/helpers"
 	"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
-	kubereplayv1alpha1lister "github.com/lwolf/kubereplay/pkg/client/listers/kubereplay/v1alpha1"
-	"github.com/lwolf/kubereplay/pkg/client/informers/externalversions"
 	"github.com/lwolf/kubereplay/pkg/client/clientset/versioned"
+	"github.com/lwolf/kubereplay/pkg/client/informers/externalversions"
+	kubereplayv1alpha1lister "github.com/lwolf/kubereplay/pkg/client/listers/kubereplay/v1alpha1"
 	"github.com/mohae/deepcopy"
 	"k8s.io/api/apps/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -27,7 +28,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"path/filepath"
-	"github.com/lwolf/kubereplay/constants"
 )
 
 const (
@@ -225,7 +225,6 @@ func main() {
 	si := externalversions.NewSharedInformerFactory(cl, 30*time.Second)
 	go si.Kubereplay().V1alpha1().Harvesters().Informer().Run(stop)
 	si.WaitForCacheSync(stop)
-
 
 	lister := si.Kubereplay().V1alpha1().Harvesters().Lister()
 

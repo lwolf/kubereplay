@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/lwolf/kubereplay.svg?branch=master)](https://travis-ci.org/lwolf/kubereplay)
 [![Docker Repository on Quay](https://quay.io/repository/lwolf/kubereplay-controller-amd64/status "Docker Repository on Quay")](https://quay.io/repository/lwolf/kubereplay-controller-amd64)
+[![Go Report Card](https://goreportcard.com/badge/github.com/lwolf/kubereplay)](https://goreportcard.com/report/github.com/lwolf/kubereplay)
 
 # kubereplay
 

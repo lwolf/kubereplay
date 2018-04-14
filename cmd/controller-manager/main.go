@@ -1,22 +1,20 @@
-
-
 package main
 
 import (
 	"flag"
 	"log"
 
-    // Import auth/gcp to connect to GKE clusters remotely
-    _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	// Import auth/gcp to connect to GKE clusters remotely
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-    configlib "github.com/kubernetes-sigs/kubebuilder/pkg/config"
+	configlib "github.com/kubernetes-sigs/kubebuilder/pkg/config"
 	"github.com/kubernetes-sigs/kubebuilder/pkg/inject/run"
 	"github.com/kubernetes-sigs/kubebuilder/pkg/install"
-    "github.com/kubernetes-sigs/kubebuilder/pkg/signals"
+	"github.com/kubernetes-sigs/kubebuilder/pkg/signals"
 	extensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 
-    "github.com/lwolf/kubereplay/pkg/inject"
-    "github.com/lwolf/kubereplay/pkg/inject/args"
+	"github.com/lwolf/kubereplay/pkg/inject"
+	"github.com/lwolf/kubereplay/pkg/inject/args"
 )
 
 var installCRDs = flag.Bool("install-crds", true, "install the CRDs used by the controller as part of startup")
@@ -25,20 +23,20 @@ var installCRDs = flag.Bool("install-crds", true, "install the CRDs used by the 
 func main() {
 	flag.Parse()
 
-    stopCh := signals.SetupSignalHandler()
-	
-    config := configlib.GetConfigOrDie()
+	stopCh := signals.SetupSignalHandler()
 
-    if *installCRDs {
-        if err := install.NewInstaller(config).Install(&InstallStrategy{crds: inject.Injector.CRDs}); err != nil {
-            log.Fatalf("Could not create CRDs: %v", err)
-        }
-    }
+	config := configlib.GetConfigOrDie()
 
-    // Start the controllers
-    if err := inject.RunAll(run.RunArguments{Stop: stopCh}, args.CreateInjectArgs(config)); err != nil {
-        log.Fatalf("%v", err)
-    }
+	if *installCRDs {
+		if err := install.NewInstaller(config).Install(&InstallStrategy{crds: inject.Injector.CRDs}); err != nil {
+			log.Fatalf("Could not create CRDs: %v", err)
+		}
+	}
+
+	// Start the controllers
+	if err := inject.RunAll(run.RunArguments{Stop: stopCh}, args.CreateInjectArgs(config)); err != nil {
+		log.Fatalf("%v", err)
+	}
 }
 
 type InstallStrategy struct {
