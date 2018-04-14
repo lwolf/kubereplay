@@ -4,13 +4,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Created by "kubebuilder create resource" for you to implement the Harvester resource schema definition
-// as a go struct
-
 // HarvesterSpec defines the desired state of Harvester
 type HarvesterSpec struct {
 	Selector    map[string]string `json:"selector,omitempty"`
-	AppPort     uint32            `json:"appPort,omitempty"`
+	AppPort     uint32            `json:"app_port,omitempty"`
 	Refinery    string            `json:"refinery,omitempty"`
 	SegmentSize uint32            `json:"segment,omitempty"`
 }

@@ -3,40 +3,55 @@ package harvester_test
 import (
 	"testing"
 
+	"github.com/kubernetes-sigs/kubebuilder/pkg/controller"
+	"github.com/kubernetes-sigs/kubebuilder/pkg/inject/run"
 	"github.com/kubernetes-sigs/kubebuilder/pkg/test"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/lwolf/kubereplay/pkg/apis"
-	"github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset"
-	"github.com/lwolf/kubereplay/pkg/controller/harvester"
-	"github.com/lwolf/kubereplay/pkg/controller/sharedinformers"
+	"github.com/lwolf/kubereplay/pkg/client/clientset/versioned"
+	"github.com/lwolf/kubereplay/pkg/inject"
+	"github.com/lwolf/kubereplay/pkg/inject/args"
 )
 
-var testenv *test.TestEnvironment
-var config *rest.Config
-var cs *clientset.Clientset
-var shutdown chan struct{}
-var controller *harvester.HarvesterController
-var si *sharedinformers.SharedInformers
+var (
+	testenv  *test.TestEnvironment
+	config   *rest.Config
+	cs       *versioned.Clientset
+	ks       *kubernetes.Clientset
+	shutdown chan struct{}
+	ctrl     *controller.GenericController
+)
 
-func TestHarvester(t *testing.T) {
+func TestBee(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecsWithDefaultAndCustomReporters(t, "Harvester Suite", []Reporter{test.NewlineReporter{}})
 }
 
 var _ = BeforeSuite(func() {
-	testenv = &test.TestEnvironment{CRDs: apis.APIMeta.GetCRDs()}
+	testenv = &test.TestEnvironment{CRDs: inject.Injector.CRDs}
 	var err error
 	config, err = testenv.Start()
 	Expect(err).NotTo(HaveOccurred())
-	cs = clientset.NewForConfigOrDie(config)
+	cs = versioned.NewForConfigOrDie(config)
+	ks = kubernetes.NewForConfigOrDie(config)
 
 	shutdown = make(chan struct{})
-	si = sharedinformers.NewSharedInformers(config, shutdown)
-	controller = harvester.NewHarvesterController(config, si)
-	controller.Run(shutdown)
+	arguments := args.CreateInjectArgs(config)
+	go func() {
+		defer GinkgoRecover()
+		Expect(inject.RunAll(run.RunArguments{Stop: shutdown}, arguments)).
+			To(BeNil())
+	}()
+
+	// Wait for RunAll to create the controllers and then set the reference
+	defer GinkgoRecover()
+	Eventually(func() interface{} { return arguments.ControllerManager.GetController("HarvesterController") }).
+		Should(Not(BeNil()))
+	ctrl = arguments.ControllerManager.GetController("HarvesterController")
 })
 
 var _ = AfterSuite(func() {
+	close(shutdown)
 	testenv.Stop()
 })

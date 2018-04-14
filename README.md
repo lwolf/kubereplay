@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/lwolf/kubereplay.svg?branch=master)](https://travis-ci.org/lwolf/kubereplay)
 [![Docker Repository on Quay](https://quay.io/repository/lwolf/kubereplay-controller-amd64/status "Docker Repository on Quay")](https://quay.io/repository/lwolf/kubereplay-controller-amd64)
+[![Go Report Card](https://goreportcard.com/badge/github.com/lwolf/kubereplay)](https://goreportcard.com/report/github.com/lwolf/kubereplay)
 
 # kubereplay
 
@@ -16,13 +17,13 @@ This is an early alpha version. It is *not* meant to run in production.
 $ minikube start --extra-config=apiserver.Admission.PluginNames="Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota"
 
 # start kubereplay controller manager in one console
-$ kubebuilder run local
+$ go run cmd/controller-manager/main.go --kubeconfig=~/.kube/config
 
 # start initializer controller in the second
-$ go run cmd/initializer-controller/main.go --kubeconfig=/Users/lwolf/.kube/config
+$ go run cmd/initializer-controller/main.go --kubeconfig=~/.kube/config
 
 # add initializer config
-$ kubect create -f samle/initializer-configuration.yaml
+$ kubect create -f sample/initializer-configuration.yaml
 
 # create harvester, refinery and test deployment
 $ kubectl create -f sample/harvester.yaml
@@ -31,6 +32,8 @@ $ kubectl create -f sample/echoserver.yaml
 ```
 
 ## Pre-requisites
+
+* Kubernetes v1.9+ with admission capabilities enabled.
 
 ## Deploying kubereplay
 
@@ -46,3 +49,6 @@ The list of [releases](https://github.com/lwolf/kubereplay/releases) is the best
 
 # Support
 
+If you're using kubereplay and want to support the development, buy me a beer at Beerpay!
+
+[![Beerpay](https://beerpay.io/lwolf/kubereplay/badge.svg?style=beer-square)](https://beerpay.io/lwolf/kubereplay)

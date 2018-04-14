@@ -1,0 +1,6 @@
+apiVersion: kubereplay.lwolf.org/v1alpha1
+kind: Refinery
+metadata:
+  name: refinery-example
+spec:
+  foo: bar

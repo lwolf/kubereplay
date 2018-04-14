@@ -6,7 +6,8 @@ import (
 
 // EDIT THIS FILE!
 // Created by "kubebuilder create resource" for you to implement the Refinery resource schema definition
-// as a go struct
+// as a go struct.
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // RefinerySpec defines the desired state of Refinery
 type RefinerySpec struct {
@@ -64,7 +65,6 @@ type KafkaSilo struct {
 
 // RefineryStatus defines the observed state of Refinery
 type RefineryStatus struct {
-	// INSERT YOUR CODE HERE - define observed state schema
 	Deployed bool `json:"deployed,omitempty"`
 }
 

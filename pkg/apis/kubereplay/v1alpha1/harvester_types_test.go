@@ -1,7 +1,13 @@
 package v1alpha1_test
 
 import (
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
+	. "github.com/lwolf/kubereplay/pkg/client/clientset/versioned/typed/kubereplay/v1alpha1"
 )
 
 // EDIT THIS FILE!

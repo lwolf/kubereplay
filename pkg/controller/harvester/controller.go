@@ -4,66 +4,76 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"github.com/kubernetes-sigs/kubebuilder/pkg/builders"
-	extBeta "k8s.io/api/extensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes"
-	corev1listers "k8s.io/client-go/listers/core/v1"
-	extv1listers "k8s.io/client-go/listers/extensions/v1beta1"
 
+	"github.com/kubernetes-sigs/kubebuilder/pkg/controller"
+	"github.com/kubernetes-sigs/kubebuilder/pkg/controller/types"
+
+	"github.com/kubernetes-sigs/kubebuilder/pkg/controller/eventhandlers"
+	"github.com/kubernetes-sigs/kubebuilder/pkg/controller/predicates"
+	"github.com/lwolf/kubereplay/constants"
 	"github.com/lwolf/kubereplay/helpers"
-	"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
-	"github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset"
-	listers "github.com/lwolf/kubereplay/pkg/client/listers_generated/kubereplay/v1alpha1"
-	"github.com/lwolf/kubereplay/pkg/constants"
-	"github.com/lwolf/kubereplay/pkg/controller/sharedinformers"
+	kubereplayv1alpha1 "github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
+	kubereplayv1alpha1client "github.com/lwolf/kubereplay/pkg/client/clientset/versioned/typed/kubereplay/v1alpha1"
+	kubereplayv1alpha1informer "github.com/lwolf/kubereplay/pkg/client/informers/externalversions/kubereplay/v1alpha1"
+	kubereplayv1alpha1lister "github.com/lwolf/kubereplay/pkg/client/listers/kubereplay/v1alpha1"
+	"github.com/lwolf/kubereplay/pkg/inject/args"
+	appsv1beta "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	appsv1lister "k8s.io/client-go/listers/apps/v1"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 )
 
-func (c *HarvesterControllerImpl) reconcileDeployment(green *extBeta.Deployment, blue *extBeta.Deployment, blueReplicas int32, greenReplicas int32){
-	log.Printf("reconciling deployment %s to %d/%d", green.Name, blueReplicas, greenReplicas)
+const controllerAgentName = "kubereplay-harvester-controller"
+
+func (bc *HarvesterController) reconcileDeployment(green *appsv1beta.Deployment, blue *appsv1beta.Deployment, blueReplicas int32, greenReplicas int32) {
+	log.Printf("reconciling deployment %s v1to %d/%d", green.Name, blueReplicas, greenReplicas)
 	if *blue.Spec.Replicas != blueReplicas {
 		log.Printf("blue replica needs reconcilation %d != %d", *blue.Spec.Replicas, blueReplicas)
-		deploy, err := c.cs.ExtensionsV1beta1().Deployments(blue.Namespace).Get(blue.Name, metav1.GetOptions{})
+		deploy, err := bc.kubernetesclient.ExtensionsV1beta1().Deployments(blue.Namespace).Get(blue.Name, metav1.GetOptions{})
 		if err != nil {
 			log.Printf("failed to get scale for deployment %s: %v", blue.Name, err)
 		}
 		deploy.Spec.Replicas = &blueReplicas
 		deploy.Annotations[constants.AnnotationKeyReplicas] = fmt.Sprintf("%d", blueReplicas)
-		_, err = c.cs.ExtensionsV1beta1().Deployments(blue.Namespace).Update(deploy)
+		_, err = bc.kubernetesclient.ExtensionsV1beta1().Deployments(blue.Namespace).Update(deploy)
 		if err != nil {
 			log.Printf("failed to scale deployment %s to %d replicas: %v", blue.Name, blueReplicas, err)
 		}
 	}
 	if *green.Spec.Replicas != greenReplicas {
 		log.Printf("green replica needs reconcilation %d != %d", *green.Spec.Replicas, greenReplicas)
-		deploy, err := c.cs.ExtensionsV1beta1().Deployments(green.Namespace).Get(green.Name, metav1.GetOptions{})
+		deploy, err := bc.kubernetesclient.ExtensionsV1beta1().Deployments(green.Namespace).Get(green.Name, metav1.GetOptions{})
 		if err != nil {
 			log.Printf("failed to get scale for deployment %s: %v", green.Name, err)
 		}
 		deploy.Spec.Replicas = &greenReplicas
 		deploy.Annotations[constants.AnnotationKeyReplicas] = fmt.Sprintf("%d", greenReplicas)
-		_, err = c.cs.ExtensionsV1beta1().Deployments(green.Namespace).Update(deploy)
+		_, err = bc.kubernetesclient.ExtensionsV1beta1().Deployments(green.Namespace).Update(deploy)
 		if err != nil {
 			log.Printf("failed to scale deployment %s to %d replicas: %v", green.Name, greenReplicas, err)
 		}
 	}
+
 }
 
-// Reconcile handles enqueued messages
-func (c *HarvesterControllerImpl) Reconcile(u *v1alpha1.Harvester) error {
-	log.Printf("running reconcile Harvester for %s", u.Name)
+func (bc *HarvesterController) Reconcile(k types.ReconcileKey) error {
+	log.Printf("running reconcile Harvester for %s", k.Name)
+	h, err := bc.Get(k.Namespace, k.Name)
+	if err != nil {
+		return err
+	}
 
 	selector, err := metav1.LabelSelectorAsSelector(
-		&metav1.LabelSelector{MatchLabels: u.Spec.Selector},
+		&metav1.LabelSelector{MatchLabels: h.Spec.Selector},
 	)
-	deploys, err := c.extDeploymentLister.List(selector)
+	deploys, err := bc.deploymentLister.List(selector)
 	if err != nil {
 		return err
 	}
 	var forceReconcile bool
-	if u.Spec.SegmentSize != u.Status.SegmentSize {
+	if h.Spec.SegmentSize != h.Status.SegmentSize {
 		forceReconcile = true
 	}
 
@@ -82,14 +92,14 @@ func (c *HarvesterControllerImpl) Reconcile(u *v1alpha1.Harvester) error {
 			log.Printf("deployment %s does not have a shadow", d.Name)
 			continue
 		}
-		blue, err := c.extDeploymentLister.Deployments(d.Namespace).Get(blueName)
+		blue, err := bc.deploymentLister.Deployments(d.Namespace).Get(blueName)
 		if err != nil {
 			log.Printf("failed to get deployment by shadow name %s: %v", blueName, err)
 			continue
 		}
 		var blueReplicas, greenReplicas int32
 		if forceReconcile {
-			blueReplicas, greenReplicas = helpers.BlueGreenReplicas(*d.Spec.Replicas+*blue.Spec.Replicas, int32(u.Spec.SegmentSize))
+			blueReplicas, greenReplicas = helpers.BlueGreenReplicas(*d.Spec.Replicas+*blue.Spec.Replicas, int32(h.Spec.SegmentSize))
 		} else {
 			ar, ok := d.Annotations[constants.AnnotationKeyReplicas]
 			if ok {
@@ -100,22 +110,22 @@ func (c *HarvesterControllerImpl) Reconcile(u *v1alpha1.Harvester) error {
 					}
 				}
 			}
-			blueReplicas, greenReplicas = helpers.BlueGreenReplicas(*d.Spec.Replicas, int32(u.Spec.SegmentSize))
+			blueReplicas, greenReplicas = helpers.BlueGreenReplicas(*d.Spec.Replicas, int32(h.Spec.SegmentSize))
 		}
 		log.Printf("new replicas count %d, %d", blueReplicas, greenReplicas)
-		go c.reconcileDeployment(d, blue, blueReplicas, greenReplicas)
+		go bc.reconcileDeployment(d, blue, blueReplicas, greenReplicas)
 	}
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		// Retrieve the latest version of Harvester before attempting update
 		// RetryOnConflict uses exponential backoff to avoid exhausting the apiserver
 
-		result, getErr := c.Get(u.Namespace, u.Name)
+		result, getErr := bc.Get(h.Namespace, h.Name)
 		if getErr != nil {
 			log.Fatalf("Failed to get latest version of Harvester: %v", getErr)
 		}
-		result.Status.SegmentSize = u.Spec.SegmentSize
-		_, updateErr := c.client.KubereplayV1alpha1().Harvesters(u.Namespace).Update(u)
+		result.Status.SegmentSize = h.Spec.SegmentSize
+		_, updateErr := bc.harvesterclient.Harvesters(h.Namespace).Update(h)
 		return updateErr
 	})
 	if retryErr != nil {
@@ -128,54 +138,55 @@ func (c *HarvesterControllerImpl) Reconcile(u *v1alpha1.Harvester) error {
 	return nil
 }
 
+func (bc *HarvesterController) Lookup(k types.ReconcileKey) (interface{}, error) {
+	return bc.harvesterLister.Harvesters(k.Namespace).Get(k.Name)
+}
+
+func (bc *HarvesterController) Get(namespace, name string) (*kubereplayv1alpha1.Harvester, error) {
+	return bc.harvesterLister.Harvesters(namespace).Get(name)
+}
+
 // +controller:group=kubereplay,version=v1alpha1,kind=Harvester,resource=harvesters
-type HarvesterControllerImpl struct {
-	builders.DefaultControllerFns
+// +informers:group=apps,version=v1,kind=Deployment
+// +rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+type HarvesterController struct {
+	args.InjectArgs
+	harvesterLister kubereplayv1alpha1lister.HarvesterLister
+	harvesterclient kubereplayv1alpha1client.KubereplayV1alpha1Interface
 
-	lister              listers.HarvesterLister
-	extDeploymentLister extv1listers.DeploymentLister
-	coreLister          corev1listers.ConfigMapLister
+	deploymentLister appsv1lister.DeploymentLister
+	kubernetesclient *kubernetes.Clientset
 
-	cs     *kubernetes.Clientset
-	client *clientset.Clientset
+	recorder record.EventRecorder
 }
 
-// Init initializes the controller and is called by the generated code
-// Register watches for additional resource types here.
-func (c *HarvesterControllerImpl) Init(arguments sharedinformers.ControllerInitArguments) {
-	// Use the lister for indexing harvesters labels
-	c.lister = arguments.GetSharedInformers().Factory.Kubereplay().V1alpha1().Harvesters().Lister()
-	c.extDeploymentLister = arguments.GetSharedInformers().KubernetesFactory.Extensions().V1beta1().Deployments().Lister()
-	c.coreLister = arguments.GetSharedInformers().KubernetesFactory.Core().V1().ConfigMaps().Lister()
-	c.cs = arguments.GetSharedInformers().KubernetesClientSet
-	c.client = clientset.NewForConfigOrDie(arguments.GetRestConfig())
-
-	arguments.Watch(
-		"HarvesterExtDeployment",
-		arguments.GetSharedInformers().KubernetesFactory.Extensions().V1beta1().Deployments().Informer(),
-		c.ExtDeploymentToHarvesters)
-}
-
-func (c *HarvesterControllerImpl) Get(namespace, name string) (*v1alpha1.Harvester, error) {
-	return c.lister.Harvesters(namespace).Get(name)
-}
-
-func (c *HarvesterControllerImpl) ExtDeploymentToHarvesters(i interface{}) ([]string, error) {
-	d, _ := i.(*extBeta.Deployment)
-	harvesters, err := c.lister.List(labels.Everything())
-	if err != nil {
-		log.Printf("failed to get list of harvesters: %v", err)
-		return []string{}, nil
-	}
-	for _, h := range harvesters {
-		if labels.Equals(d.Labels, h.Spec.Selector) {
-			a, ok := d.Annotations[constants.AnnotationKeyDefault]
-			if ok && a == constants.AnnotationValueCapture {
-				continue
-			}
-			return []string{d.Namespace + "/" + h.Name}, nil
-		}
+// ProvideController provides a controller that will be run at startup.  Kubebuilder will use codegeneration
+// to automatically register this controller in the inject package
+func ProvideController(arguments args.InjectArgs) (*controller.GenericController, error) {
+	bc := &HarvesterController{
+		InjectArgs:       arguments,
+		harvesterLister:  arguments.ControllerManager.GetInformerProvider(&kubereplayv1alpha1.Harvester{}).(kubereplayv1alpha1informer.HarvesterInformer).Lister(),
+		harvesterclient:  arguments.Clientset.KubereplayV1alpha1(),
+		deploymentLister: arguments.KubernetesInformers.Apps().V1().Deployments().Lister(),
+		kubernetesclient: arguments.KubernetesClientSet,
+		recorder:         arguments.CreateRecorder(controllerAgentName),
 	}
 
-	return []string{}, nil
+	// Create a new controller that will call HarvesterController.Reconcile on changes to Harvesters
+	gc := &controller.GenericController{
+		Name:             "HarvesterController",
+		Reconcile:        bc.Reconcile,
+		InformerRegistry: arguments.ControllerManager,
+	}
+	if err := gc.Watch(&kubereplayv1alpha1.Harvester{}); err != nil {
+		return gc, err
+	}
+
+	// INSERT ADDITIONAL WATCHES HERE BY CALLING gc.Watch.*() FUNCTIONS
+	// NOTE: Informers for Kubernetes resources *MUST* be registered in the pkg/inject package so that they are started.
+	if err := gc.WatchControllerOf(&appsv1beta.Deployment{}, eventhandlers.Path{bc.Lookup},
+		predicates.ResourceVersionChanged); err != nil {
+		return gc, err
+	}
+	return gc, nil
 }

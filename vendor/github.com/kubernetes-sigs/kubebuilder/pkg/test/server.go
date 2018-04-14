@@ -26,10 +26,12 @@ import (
 	"github.com/kubernetes-sigs/kubebuilder/pkg/install"
 )
 
+// TestEnvironment creates a Kubernetes test environment that will start / stop the Kubernetes control plane and
+// install extension APIs
 type TestEnvironment struct {
 	ControlPlane integration.ControlPlane
 	Config       *rest.Config
-	CRDs         []extensionsv1beta1.CustomResourceDefinition
+	CRDs         []*extensionsv1beta1.CustomResourceDefinition
 }
 
 // Stop stops a running server
@@ -70,9 +72,9 @@ func (te *TestEnvironment) Start() (*rest.Config, error) {
 
 type InstallStrategy struct {
 	install.EmptyInstallStrategy
-	crds []extensionsv1beta1.CustomResourceDefinition
+	crds []*extensionsv1beta1.CustomResourceDefinition
 }
 
-func (s *InstallStrategy) GetCRDs() []extensionsv1beta1.CustomResourceDefinition {
+func (s *InstallStrategy) GetCRDs() []*extensionsv1beta1.CustomResourceDefinition {
 	return s.crds
 }

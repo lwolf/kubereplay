@@ -37,6 +37,7 @@ type uninstaller struct {
 	apireg apiregistrationv1beta1.APIServiceInterface
 }
 
+// NewUninstaller returns a new uninstaller
 func NewUninstaller(config *rest.Config) *uninstaller {
 	cs := kubernetes.NewForConfigOrDie(config)
 	ae := apiextv1beta1client.NewForConfigOrDie(config)
@@ -50,6 +51,7 @@ func NewUninstaller(config *rest.Config) *uninstaller {
 	}
 }
 
+// Uninstall uninstalls the components installed by the InstallStrategy
 func (i *uninstaller) Uninstall(strategy InstallStrategy) error {
 	if err := i.uninstallNamespace(strategy); err != nil {
 		return err

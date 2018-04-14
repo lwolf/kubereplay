@@ -6,13 +6,13 @@ import (
 	"github.com/kubernetes-sigs/kubebuilder/pkg/test"
 	"k8s.io/client-go/rest"
 
-	"github.com/lwolf/kubereplay/pkg/apis"
-	"github.com/lwolf/kubereplay/pkg/client/clientset_generated/clientset"
+	"github.com/lwolf/kubereplay/pkg/client/clientset/versioned"
+	"github.com/lwolf/kubereplay/pkg/inject"
 )
 
 var testenv *test.TestEnvironment
 var config *rest.Config
-var cs *clientset.Clientset
+var cs *versioned.Clientset
 
 func TestV1alpha1(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -20,13 +20,13 @@ func TestV1alpha1(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	testenv = &test.TestEnvironment{CRDs: apis.APIMeta.GetCRDs()}
+	testenv = &test.TestEnvironment{CRDs: inject.Injector.CRDs}
 
 	var err error
 	config, err = testenv.Start()
 	Expect(err).NotTo(HaveOccurred())
 
-	cs = clientset.NewForConfigOrDie(config)
+	cs = versioned.NewForConfigOrDie(config)
 })
 
 var _ = AfterSuite(func() {

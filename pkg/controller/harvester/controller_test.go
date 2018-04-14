@@ -1,6 +1,7 @@
 package harvester_test
 
 import (
+	"github.com/kubernetes-sigs/kubebuilder/pkg/controller/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -9,13 +10,16 @@ import (
 
 var _ = Describe("Harvester controller", func() {
 	var instance Harvester
-	var expectedKey string
+	var expectedKey types.ReconcileKey
 	var client HarvesterInterface
 
 	BeforeEach(func() {
 		instance = Harvester{}
 		instance.Name = "instance-1"
-		expectedKey = "default/instance-1"
+		expectedKey = types.ReconcileKey{
+			Namespace: "default",
+			Name:      "instance-1",
+		}
 	})
 
 	AfterEach(func() {
@@ -25,12 +29,13 @@ var _ = Describe("Harvester controller", func() {
 	Describe("when creating a new object", func() {
 		It("invoke the reconcile method", func() {
 			after := make(chan struct{})
-			controller.AfterReconcile = func(key string, err error) {
+			ctrl.AfterReconcile = func(key types.ReconcileKey, err error) {
 				defer func() {
 					// Recover in case the key is reconciled multiple times
 					defer func() { recover() }()
 					close(after)
 				}()
+				defer GinkgoRecover()
 				Expect(key).To(Equal(expectedKey))
 				Expect(err).ToNot(HaveOccurred())
 			}
@@ -41,7 +46,7 @@ var _ = Describe("Harvester controller", func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// Wait for reconcile to happen
-			Eventually(after).Should(BeClosed())
+			Eventually(after, "10s", "100ms").Should(BeClosed())
 
 			// INSERT YOUR CODE HERE - test conditions post reconcile
 		})
