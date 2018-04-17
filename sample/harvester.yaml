@@ -12,5 +12,5 @@ spec:
   selector:
     app: kubereplay
     module: test
-  # Name of the silo to send traffic to
+  # Name of the Refinery to send traffic to
   refinery: "refinery-example"
