@@ -1,6 +1,5 @@
-#TOS
+# Documentation
 
-* [Architecture](architecture.md)
 * [Initialization](initialization.md)
 * [HarvesterCRD](harvester.md)
 * [RefineryCRD](refinery.md)

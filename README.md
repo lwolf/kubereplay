@@ -22,7 +22,7 @@ Kubereplay creates and manage 2 CRDs: Harvesters and Refineries.
 Refinery - is responsible for managing dedicated GoReplay deployment used for receiving data from workloads (harvesters).
  It listens to traffic on tcp socket and then sends it to configured output (stdout, elasticsearch, kafka, http).
 
-Harvester - is used to configure which deployments should controlled by Kubereplay.
+Harvester - is used to configure which deployments should be controlled by Kubereplay.
 Based on selector in Harvester spec Kubereplay will add GoReplay-sidecar to matching deployments.
 More about initialization process is in the [docs](docs/initialization.md)
 
