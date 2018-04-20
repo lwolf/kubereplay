@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -18,10 +19,10 @@ func AppLabels(name string) map[string]string {
 	}
 }
 
-func fileSiloToArgs(spec *kubereplayv1alpha1.FileSilo) *[]string {
+func fileSiloToArgs(spec *kubereplayv1alpha1.FileSilo) (*[]string, error) {
 	var args []string
 	if spec.Filename == "" {
-		log.Fatalf("Filename is required for file output mode")
+		return nil, errors.New("filename is required for file output mode")
 	} else {
 		args = append(args, "--output-file")
 		args = append(args, spec.Filename)
@@ -43,32 +44,31 @@ func fileSiloToArgs(spec *kubereplayv1alpha1.FileSilo) *[]string {
 	if spec.FileLimit != "" {
 		args = append(args, "--output-file-size-limit")
 		args = append(args, spec.FileLimit)
-
 	}
 
-	return &args
+	return &args, nil
 }
 
-func tcpSiloToArgs(spec *kubereplayv1alpha1.TcpSilo) *[]string {
+func tcpSiloToArgs(spec *kubereplayv1alpha1.TcpSilo) (*[]string, error) {
 	var args []string
 	if spec.Uri == "" {
-		log.Fatalf("Uri is required for tcp output mode")
+		return nil, errors.New("uri is required for tcp output mode")
 	}
 	args = append(args, "--output-tcp")
 	args = append(args, spec.Uri)
-	return &args
+	return &args, nil
 }
 
-func stdoutSiloToArgs(spec *kubereplayv1alpha1.StdoutSilo) *[]string {
+func stdoutSiloToArgs(spec *kubereplayv1alpha1.StdoutSilo) (*[]string, error) {
 	var args []string
 	args = append(args, "--output-stdout")
-	return &args
+	return &args, nil
 }
 
-func httpSiloToArgs(spec *kubereplayv1alpha1.HttpSilo) *[]string {
+func httpSiloToArgs(spec *kubereplayv1alpha1.HttpSilo) (*[]string, error) {
 	var args []string
 	if spec.Uri == "" {
-		log.Fatalf("Uri is required for http output mode")
+		return nil, errors.New("uri is required for http output mode")
 	}
 	args = append(args, "--output-http")
 	args = append(args, spec.Uri)
@@ -82,24 +82,24 @@ func httpSiloToArgs(spec *kubereplayv1alpha1.HttpSilo) *[]string {
 		args = append(args, strconv.Itoa(spec.ResponseBuffer))
 	}
 
-	return &args
+	return &args, nil
 }
 
-func elasticsearchSiloToArgs(spec *kubereplayv1alpha1.ElasticsearchSilo) *[]string {
+func elasticsearchSiloToArgs(spec *kubereplayv1alpha1.ElasticsearchSilo) (*[]string, error) {
 	var args []string
 	if spec.Uri == "" {
-		log.Fatalf("Uri is required for elasticsearch output mode")
+		return nil, errors.New("uri is required for elasticsearch output mode")
 	}
 	args = append(args, "--output-http-elasticsearch")
 	args = append(args, spec.Uri)
 
-	return &args
+	return &args, nil
 }
 
-func kafkaSiloToArgs(spec *kubereplayv1alpha1.KafkaSilo) *[]string {
+func kafkaSiloToArgs(spec *kubereplayv1alpha1.KafkaSilo) (*[]string, error) {
 	var args []string
 	if spec.Uri == "" {
-		log.Fatalf("Uri is required for kafka output mode")
+		return nil, errors.New("uri is required for kafka output mode")
 	}
 	args = append(args, "--output-kafka-host")
 	args = append(args, spec.Uri)
@@ -113,7 +113,7 @@ func kafkaSiloToArgs(spec *kubereplayv1alpha1.KafkaSilo) *[]string {
 		args = append(args, spec.Topic)
 	}
 
-	return &args
+	return &args, nil
 }
 
 func mergeArgs(newArgs []string, args []string) []string {
@@ -145,42 +145,63 @@ func GenerateService(name string, spec *kubereplayv1alpha1.RefinerySpec) *apiv1.
 	}
 }
 
-func GenerateDeployment(name string, r *kubereplayv1alpha1.Refinery) *appsv1.Deployment {
-
+func argsFromSpec(spec *kubereplayv1alpha1.RefinerySpec) *[]string {
 	var args []string
 	// Confugure input arguments
 	args = append(args, "--input-tcp")
 	args = append(args, ":28020")
 
-	spec := r.Spec
-
 	if spec.Storage.File.Enabled == true {
-		fileArgs := fileSiloToArgs(spec.Storage.File)
-		args = mergeArgs(*fileArgs, args)
+		fileArgs, err := fileSiloToArgs(spec.Storage.File)
+		if err != nil {
+			log.Print(err)
+		} else {
+			args = mergeArgs(*fileArgs, args)
+		}
 	}
 	if spec.Storage.Tcp.Enabled == true {
-		tcpArgs := tcpSiloToArgs(spec.Storage.Tcp)
-		args = mergeArgs(*tcpArgs, args)
+		tcpArgs, err := tcpSiloToArgs(spec.Storage.Tcp)
+		if err != nil {
+			log.Print(err)
+		} else {
+			args = mergeArgs(*tcpArgs, args)
+		}
 	}
 
 	if spec.Storage.Stdout.Enabled == true {
-		stdoutArgs := stdoutSiloToArgs(spec.Storage.Stdout)
-		args = mergeArgs(*stdoutArgs, args)
+		stdoutArgs, err := stdoutSiloToArgs(spec.Storage.Stdout)
+		if err != nil {
+			log.Print(err)
+		} else {
+			args = mergeArgs(*stdoutArgs, args)
+		}
 	}
 
 	if spec.Storage.Http.Enabled == true {
-		httpArgs := httpSiloToArgs(spec.Storage.Http)
-		args = mergeArgs(*httpArgs, args)
+		httpArgs, err := httpSiloToArgs(spec.Storage.Http)
+		if err != nil {
+			log.Print(err)
+		} else {
+			args = mergeArgs(*httpArgs, args)
+		}
 	}
 
 	if spec.Storage.Elasticsearch.Enabled == true {
-		elasticsearchArgs := elasticsearchSiloToArgs(spec.Storage.Elasticsearch)
-		args = mergeArgs(*elasticsearchArgs, args)
+		elasticsearchArgs, err := elasticsearchSiloToArgs(spec.Storage.Elasticsearch)
+		if err != nil {
+			log.Print(err)
+		} else {
+			args = mergeArgs(*elasticsearchArgs, args)
+		}
 	}
 
 	if spec.Storage.Kafka.Enabled == true {
-		kafkaArgs := kafkaSiloToArgs(spec.Storage.Kafka)
-		args = mergeArgs(*kafkaArgs, args)
+		kafkaArgs, err := kafkaSiloToArgs(spec.Storage.Kafka)
+		if err != nil {
+			log.Print(err)
+		} else {
+			args = mergeArgs(*kafkaArgs, args)
+		}
 	}
 
 	if spec.Workers > 0 {
@@ -192,6 +213,12 @@ func GenerateDeployment(name string, r *kubereplayv1alpha1.Refinery) *appsv1.Dep
 		args = append(args, "-output-http-timeout")
 		args = append(args, spec.Timeout)
 	}
+	return &args
+}
+
+func GenerateDeployment(name string, r *kubereplayv1alpha1.Refinery) *appsv1.Deployment {
+
+	args := argsFromSpec(&r.Spec)
 
 	ownerReferences := []metav1.OwnerReference{
 		{
@@ -223,7 +250,7 @@ func GenerateDeployment(name string, r *kubereplayv1alpha1.Refinery) *appsv1.Dep
 						{
 							Name:  "goreplay",
 							Image: "buger/goreplay:latest",
-							Args:  args,
+							Args:  *args,
 							Ports: []apiv1.ContainerPort{
 								{
 									Name:          "tcp",
