@@ -48,6 +48,7 @@ release:
     owner: lwolf
     name: kubereplay
   prerelease: true
+  draft: true
 
 dockers:
   - image: quay.io/lwolf/kubereplay-controller-amd64
