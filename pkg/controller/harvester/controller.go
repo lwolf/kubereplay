@@ -112,7 +112,7 @@ func (bc *HarvesterController) Reconcile(k types.ReconcileKey) error {
 			}
 			blueReplicas, greenReplicas = helpers.BlueGreenReplicas(*d.Spec.Replicas, int32(h.Spec.SegmentSize))
 		}
-		log.Printf("new replicas count %d, %d", blueReplicas, greenReplicas)
+		log.Printf("new replicas count %d, %d. is forced reconcile=%v", blueReplicas, greenReplicas, forceReconcile)
 		go bc.reconcileDeployment(d, blue, blueReplicas, greenReplicas)
 	}
 

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -150,7 +151,7 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 			}
 			// set annotation for original deployment
 			greenAnnotations[constants.AnnotationKeyDefault] = constants.AnnotationValueSkip
-			greenAnnotations[constants.AnnotationKeyReplicas] = string(greenReplicas)
+			greenAnnotations[constants.AnnotationKeyReplicas] = strconv.Itoa(int(greenReplicas))
 			greenAnnotations[constants.AnnotationKeyShadow] = initializedDeploymentBlue.Name
 			initializedDeploymentGreen.ObjectMeta.OwnerReferences = ownerReferences
 			initializedDeploymentGreen.Annotations = greenAnnotations
@@ -161,7 +162,7 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 				blueAnnotations = make(map[string]string)
 			}
 			blueAnnotations[constants.AnnotationKeyDefault] = constants.AnnotationValueCapture
-			blueAnnotations[constants.AnnotationKeyReplicas] = string(blueReplicas)
+			blueAnnotations[constants.AnnotationKeyReplicas] = strconv.Itoa(int(blueReplicas))
 			blueAnnotations[constants.AnnotationKeyShadow] = initializedDeploymentGreen.Name
 			initializedDeploymentBlue.ObjectMeta.OwnerReferences = ownerReferences
 			initializedDeploymentBlue.Annotations = blueAnnotations
