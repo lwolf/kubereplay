@@ -12,37 +12,37 @@ builds:
   - binary: kubereplay-controller
     main: ./cmd/controller-manager/main.go
     goos:
-      - darwin
+#      - darwin
       - linux
     goarch:
       - amd64
-      - arm
-      - arm64
-    goarm:
-       - 6
-       - 7
-    ignore:
-      - goos: darwin
-        goarch: arm
-      - goos: darwin
-        goarch: arm64
+#      - arm
+#      - arm64
+#    goarm:
+#       - 6
+#       - 7
+#    ignore:
+#      - goos: darwin
+#        goarch: arm
+#      - goos: darwin
+#        goarch: arm64
   - binary: kubereplay-initializer
     main: ./cmd/initializer-controller/main.go
     goos:
-      - darwin
+#      - darwin
       - linux
     goarch:
       - amd64
-      - arm
-      - arm64
-    goarm:
-       - 6
-       - 7
-    ignore:
-      - goos: darwin
-        goarch: arm
-      - goos: darwin
-        goarch: arm64
+#      - arm
+#      - arm64
+#    goarm:
+#       - 6
+#       - 7
+#    ignore:
+#      - goos: darwin
+#        goarch: arm
+#      - goos: darwin
+#        goarch: arm64
 release:
   github:
     owner: lwolf
@@ -64,20 +64,20 @@ dockers:
     goarch: amd64
     tag_templates:
     - "{{ .Tag }}"
-  - image: quay.io/lwolf/kubereplay-controller-arm64
-    dockerfile: Dockerfile.controller
-    binary: kubereplay-controller
-    goos: linux
-    goarch: arm64
-    tag_templates:
-    - "{{ .Tag }}"
-  - image: quay.io/lwolf/kubereplay-initializer-arm64
-    dockerfile: Dockerfile.initializer
-    binary: kubereplay-initializer
-    goos: linux
-    goarch: arm64
-    tag_templates:
-    - "{{ .Tag }}"
+#  - image: quay.io/lwolf/kubereplay-controller-arm64
+#    dockerfile: Dockerfile.controller
+#    binary: kubereplay-controller
+#    goos: linux
+#    goarch: arm64
+#    tag_templates:
+#    - "{{ .Tag }}"
+#  - image: quay.io/lwolf/kubereplay-initializer-arm64
+#    dockerfile: Dockerfile.initializer
+#    binary: kubereplay-initializer
+#    goos: linux
+#    goarch: arm64
+#    tag_templates:
+#    - "{{ .Tag }}"
 
 git:
   short_hash: true
