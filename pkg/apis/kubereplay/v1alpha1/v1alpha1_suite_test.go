@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/kubernetes-sigs/kubebuilder/pkg/test"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"k8s.io/client-go/rest"
 
 	"github.com/lwolf/kubereplay/pkg/client/clientset/versioned"

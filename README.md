@@ -52,8 +52,20 @@ $ kubectl create -f sample/echoserver.yaml
 
 * Kubernetes v1.9+ with admission capabilities enabled.
 
-## Deploying kubereplay
+## Deploying Kubereplay
 
+The easiest way to deploy Kubereplay to a real cluster is by using Helm chart:
+
+```
+# add charts repository
+$ helm repo add lwolf-charts https://charts.lwolf.org
+
+# update the index if needed
+$ helm repo update
+
+# install
+$ helm install lwolf-charts/kubereplay
+```
 
 # Troubleshooting
 

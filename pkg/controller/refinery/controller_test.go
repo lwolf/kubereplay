@@ -2,19 +2,24 @@ package refinery_test
 
 import (
 	"github.com/kubernetes-sigs/kubebuilder/pkg/controller/types"
+	kubereplayv1alpha1 "github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
+	clientsetv1alpha1 "github.com/lwolf/kubereplay/pkg/client/clientset/versioned/typed/kubereplay/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 // EDIT THIS FILE!
 // Created by "kubebuilder create resource" for you to implement controller logic tests
 
 var _ = Describe("Refinery controller", func() {
-	var instance Refinery
+	var instance kubereplayv1alpha1.Refinery
 	var expectedKey types.ReconcileKey
-	var client RefineryInterface
+	var client clientsetv1alpha1.RefineryInterface
 
 	BeforeEach(func() {
-		instance = Refinery{}
+		instance = kubereplayv1alpha1.Refinery{}
 		instance.Name = "instance-1"
 		expectedKey = types.ReconcileKey{
 			Namespace: "default",

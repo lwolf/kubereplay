@@ -12,6 +12,8 @@ import (
 	"github.com/lwolf/kubereplay/pkg/client/clientset/versioned"
 	"github.com/lwolf/kubereplay/pkg/inject"
 	"github.com/lwolf/kubereplay/pkg/inject/args"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var (

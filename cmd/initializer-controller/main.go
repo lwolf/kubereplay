@@ -36,7 +36,6 @@ const (
 
 var (
 	initializerName string
-	annotation      string
 	err             error
 	clusterConfig   *rest.Config
 	kubeconfig      string
@@ -193,7 +192,6 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 }
 
 func main() {
-	flag.StringVar(&annotation, "annotation", constants.AnnotationKeyDefault, "The annotation to trigger initialization")
 	flag.StringVar(&initializerName, "initializer-name", defaultInitializerName, "The initializer name")
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to kubeconfig")
 	flag.Parse()
