@@ -10,20 +10,25 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// EDIT THIS FILE!
-// Created by "kubebuilder create resource" for you to implement controller logic tests
-
-var _ = Describe("Refinery controller", func() {
+var _ = Describe("Test Stdout Refinery controller", func() {
 	var instance kubereplayv1alpha1.Refinery
 	var expectedKey types.ReconcileKey
 	var client clientsetv1alpha1.RefineryInterface
 
 	BeforeEach(func() {
-		instance = kubereplayv1alpha1.Refinery{}
-		instance.Name = "instance-1"
+		instance = kubereplayv1alpha1.Refinery{
+			Spec: kubereplayv1alpha1.RefinerySpec{
+				Storage: &kubereplayv1alpha1.RefineryStorage{
+					Stdout: &kubereplayv1alpha1.StdoutSilo{
+						Enabled: true,
+					},
+				},
+			},
+		}
+		instance.Name = "instance-stdout"
 		expectedKey = types.ReconcileKey{
 			Namespace: "default",
-			Name:      "instance-1",
+			Name:      "instance-stdout",
 		}
 	})
 

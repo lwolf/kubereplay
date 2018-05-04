@@ -63,8 +63,12 @@ func (bc *RefineryController) Reconcile(k types.ReconcileKey) error {
 		log.Printf("service %s/%s exists", service.Namespace, service.Name)
 	}
 
-	dClient := bc.kubernetesclient.AppsV1().Deployments(k.Namespace)
+	dClient := bc.kubernetesclient.AppsV1beta2().Deployments(k.Namespace)
+
 	deployment := helpers.GenerateDeployment(k.Name, r)
+	if deployment == nil {
+		return errors.NewInvalid(r.GroupVersionKind().GroupKind(), r.Name, nil)
+	}
 	_, err = dClient.Get(deployment.Name, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		// Create Deployment

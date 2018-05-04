@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	kubereplayv1alpha1 "github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1beta2"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -151,7 +151,7 @@ func argsFromSpec(spec *kubereplayv1alpha1.RefinerySpec) *[]string {
 	args = append(args, "--input-tcp")
 	args = append(args, ":28020")
 
-	if spec.Storage.File.Enabled == true {
+	if spec.Storage.File != nil && spec.Storage.File.Enabled == true {
 		fileArgs, err := fileSiloToArgs(spec.Storage.File)
 		if err != nil {
 			log.Print(err)
@@ -159,7 +159,7 @@ func argsFromSpec(spec *kubereplayv1alpha1.RefinerySpec) *[]string {
 			args = mergeArgs(*fileArgs, args)
 		}
 	}
-	if spec.Storage.Tcp.Enabled == true {
+	if spec.Storage.Tcp != nil && spec.Storage.Tcp.Enabled == true {
 		tcpArgs, err := tcpSiloToArgs(spec.Storage.Tcp)
 		if err != nil {
 			log.Print(err)
@@ -168,7 +168,7 @@ func argsFromSpec(spec *kubereplayv1alpha1.RefinerySpec) *[]string {
 		}
 	}
 
-	if spec.Storage.Stdout.Enabled == true {
+	if spec.Storage.Stdout != nil && spec.Storage.Stdout.Enabled == true {
 		stdoutArgs, err := stdoutSiloToArgs(spec.Storage.Stdout)
 		if err != nil {
 			log.Print(err)
@@ -177,7 +177,7 @@ func argsFromSpec(spec *kubereplayv1alpha1.RefinerySpec) *[]string {
 		}
 	}
 
-	if spec.Storage.Http.Enabled == true {
+	if spec.Storage.Http != nil && spec.Storage.Http.Enabled == true {
 		httpArgs, err := httpSiloToArgs(spec.Storage.Http)
 		if err != nil {
 			log.Print(err)
@@ -186,7 +186,7 @@ func argsFromSpec(spec *kubereplayv1alpha1.RefinerySpec) *[]string {
 		}
 	}
 
-	if spec.Storage.Elasticsearch.Enabled == true {
+	if spec.Storage.Elasticsearch != nil && spec.Storage.Elasticsearch.Enabled == true {
 		elasticsearchArgs, err := elasticsearchSiloToArgs(spec.Storage.Elasticsearch)
 		if err != nil {
 			log.Print(err)
@@ -195,7 +195,7 @@ func argsFromSpec(spec *kubereplayv1alpha1.RefinerySpec) *[]string {
 		}
 	}
 
-	if spec.Storage.Kafka.Enabled == true {
+	if spec.Storage.Kafka != nil && spec.Storage.Kafka.Enabled == true {
 		kafkaArgs, err := kafkaSiloToArgs(spec.Storage.Kafka)
 		if err != nil {
 			log.Print(err)
@@ -217,7 +217,9 @@ func argsFromSpec(spec *kubereplayv1alpha1.RefinerySpec) *[]string {
 }
 
 func GenerateDeployment(name string, r *kubereplayv1alpha1.Refinery) *appsv1.Deployment {
-
+	if &r.Spec == nil || r.Spec.Storage == nil {
+		return nil
+	}
 	args := argsFromSpec(&r.Spec)
 
 	ownerReferences := []metav1.OwnerReference{
