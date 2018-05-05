@@ -1,4 +1,4 @@
-package constants
+package helpers
 
 const (
 	AnnotationKeyDefault   = "kubereplay.lwolf.org/mode"

@@ -91,7 +91,7 @@ func (bc *RefineryController) Reconcile(k types.ReconcileKey) error {
 
 		result, getErr := bc.Get(r.Namespace, r.Name)
 		if getErr != nil {
-			log.Fatalf("Failed to get latest version of Silo: %v", getErr)
+			log.Fatalf("Failed to get latest version of Refinery: %v", getErr)
 		}
 		result.Status.Deployed = true
 		_, updateErr := bc.refineryclient.Refineries(result.Namespace).Update(result)

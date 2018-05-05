@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Test Stdout Refinery controller", func() {
+var _ = Describe("Refinery controller", func() {
 	var instance kubereplayv1alpha1.Refinery
 	var expectedKey types.ReconcileKey
 	var client clientsetv1alpha1.RefineryInterface
@@ -32,8 +32,13 @@ var _ = Describe("Test Stdout Refinery controller", func() {
 		}
 	})
 
+	deletePropagation := metav1.DeletePropagationForeground
 	AfterEach(func() {
-		client.Delete(instance.Name, &metav1.DeleteOptions{})
+		client.Delete(
+			instance.Name,
+			&metav1.DeleteOptions{
+				PropagationPolicy: &deletePropagation,
+			})
 	})
 
 	Describe("when creating a new object", func() {

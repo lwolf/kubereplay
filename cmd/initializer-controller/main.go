@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/lwolf/kubereplay/constants"
 	"github.com/lwolf/kubereplay/helpers"
 	"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
 	"github.com/lwolf/kubereplay/pkg/client/clientset/versioned"
@@ -102,7 +101,7 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 				skip = true
 			}
 			annotations := deployment.GetAnnotations()
-			_, ok := annotations[constants.AnnotationKeyDefault]
+			_, ok := annotations[helpers.AnnotationKeyDefault]
 			if ok {
 				skip = true
 			}
@@ -149,9 +148,9 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 				greenAnnotations = make(map[string]string)
 			}
 			// set annotation for original deployment
-			greenAnnotations[constants.AnnotationKeyDefault] = constants.AnnotationValueSkip
-			greenAnnotations[constants.AnnotationKeyReplicas] = strconv.Itoa(int(greenReplicas))
-			greenAnnotations[constants.AnnotationKeyShadow] = initializedDeploymentBlue.Name
+			greenAnnotations[helpers.AnnotationKeyDefault] = helpers.AnnotationValueSkip
+			greenAnnotations[helpers.AnnotationKeyReplicas] = strconv.Itoa(int(greenReplicas))
+			greenAnnotations[helpers.AnnotationKeyShadow] = initializedDeploymentBlue.Name
 			initializedDeploymentGreen.ObjectMeta.OwnerReferences = ownerReferences
 			initializedDeploymentGreen.Annotations = greenAnnotations
 			initializedDeploymentGreen.Spec.Replicas = &greenReplicas
@@ -160,9 +159,9 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 			if blueAnnotations == nil {
 				blueAnnotations = make(map[string]string)
 			}
-			blueAnnotations[constants.AnnotationKeyDefault] = constants.AnnotationValueCapture
-			blueAnnotations[constants.AnnotationKeyReplicas] = strconv.Itoa(int(blueReplicas))
-			blueAnnotations[constants.AnnotationKeyShadow] = initializedDeploymentGreen.Name
+			blueAnnotations[helpers.AnnotationKeyDefault] = helpers.AnnotationValueCapture
+			blueAnnotations[helpers.AnnotationKeyReplicas] = strconv.Itoa(int(blueReplicas))
+			blueAnnotations[helpers.AnnotationKeyShadow] = initializedDeploymentGreen.Name
 			initializedDeploymentBlue.ObjectMeta.OwnerReferences = ownerReferences
 			initializedDeploymentBlue.Annotations = blueAnnotations
 			initializedDeploymentBlue.Spec.Replicas = &blueReplicas

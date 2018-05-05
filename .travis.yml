@@ -8,6 +8,9 @@ services:
 before_install:
   - docker login -u ${QUAY_LOGIN} -p ${QUAY_PASSWORD} quay.io
 
+script:
+  - docker build -f Dockerfile.test .
+
 # calls goreleaser
 deploy:
 - provider: script

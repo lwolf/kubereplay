@@ -10,7 +10,6 @@ import (
 
 	"github.com/kubernetes-sigs/kubebuilder/pkg/controller/eventhandlers"
 	"github.com/kubernetes-sigs/kubebuilder/pkg/controller/predicates"
-	"github.com/lwolf/kubereplay/constants"
 	"github.com/lwolf/kubereplay/helpers"
 	kubereplayv1alpha1 "github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
 	kubereplayv1alpha1client "github.com/lwolf/kubereplay/pkg/client/clientset/versioned/typed/kubereplay/v1alpha1"
@@ -36,7 +35,7 @@ func (bc *HarvesterController) reconcileDeployment(green *appsv1beta.Deployment,
 			log.Printf("failed to get scale for deployment %s: %v", blue.Name, err)
 		}
 		deploy.Spec.Replicas = &blueReplicas
-		deploy.Annotations[constants.AnnotationKeyReplicas] = fmt.Sprintf("%d", blueReplicas)
+		deploy.Annotations[helpers.AnnotationKeyReplicas] = fmt.Sprintf("%d", blueReplicas)
 		_, err = bc.kubernetesclient.ExtensionsV1beta1().Deployments(blue.Namespace).Update(deploy)
 		if err != nil {
 			log.Printf("failed to scale deployment %s to %d replicas: %v", blue.Name, blueReplicas, err)
@@ -49,7 +48,7 @@ func (bc *HarvesterController) reconcileDeployment(green *appsv1beta.Deployment,
 			log.Printf("failed to get scale for deployment %s: %v", green.Name, err)
 		}
 		deploy.Spec.Replicas = &greenReplicas
-		deploy.Annotations[constants.AnnotationKeyReplicas] = fmt.Sprintf("%d", greenReplicas)
+		deploy.Annotations[helpers.AnnotationKeyReplicas] = fmt.Sprintf("%d", greenReplicas)
 		_, err = bc.kubernetesclient.ExtensionsV1beta1().Deployments(green.Namespace).Update(deploy)
 		if err != nil {
 			log.Printf("failed to scale deployment %s to %d replicas: %v", green.Name, greenReplicas, err)
@@ -78,16 +77,16 @@ func (bc *HarvesterController) Reconcile(k types.ReconcileKey) error {
 	}
 
 	for _, d := range deploys {
-		a, ok := d.Annotations[constants.AnnotationKeyDefault]
+		a, ok := d.Annotations[helpers.AnnotationKeyDefault]
 
 		if !ok {
 			// annotation is not present, skipping
 			continue
 		}
-		if a == constants.AnnotationValueCapture {
+		if a == helpers.AnnotationValueCapture {
 			continue
 		}
-		blueName, ok := d.Annotations[constants.AnnotationKeyShadow]
+		blueName, ok := d.Annotations[helpers.AnnotationKeyShadow]
 		if !ok {
 			log.Printf("deployment %s does not have a shadow", d.Name)
 			continue
@@ -101,7 +100,7 @@ func (bc *HarvesterController) Reconcile(k types.ReconcileKey) error {
 		if forceReconcile {
 			blueReplicas, greenReplicas = helpers.BlueGreenReplicas(*d.Spec.Replicas+*blue.Spec.Replicas, int32(h.Spec.SegmentSize))
 		} else {
-			ar, ok := d.Annotations[constants.AnnotationKeyReplicas]
+			ar, ok := d.Annotations[helpers.AnnotationKeyReplicas]
 			if ok {
 				v, err := strconv.Atoi(ar)
 				if err == nil {
