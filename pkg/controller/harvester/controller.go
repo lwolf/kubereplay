@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/kubernetes-sigs/kubebuilder/pkg/controller"
 	"github.com/kubernetes-sigs/kubebuilder/pkg/controller/types"
@@ -27,7 +28,7 @@ import (
 const controllerAgentName = "kubereplay-harvester-controller"
 
 func (bc *HarvesterController) reconcileDeployment(green *appsv1beta.Deployment, blue *appsv1beta.Deployment, blueReplicas int32, greenReplicas int32) {
-	log.Printf("reconciling deployment %s v1to %d/%d", green.Name, blueReplicas, greenReplicas)
+	log.Printf("reconciling deployment %s to %d/%d", green.Name, blueReplicas, greenReplicas)
 	if *blue.Spec.Replicas != blueReplicas {
 		log.Printf("blue replica needs reconcilation %d != %d", *blue.Spec.Replicas, blueReplicas)
 		deploy, err := bc.kubernetesclient.ExtensionsV1beta1().Deployments(blue.Namespace).Get(blue.Name, metav1.GetOptions{})
@@ -57,6 +58,27 @@ func (bc *HarvesterController) reconcileDeployment(green *appsv1beta.Deployment,
 
 }
 
+func arrayToMap(deployments []*appsv1beta.Deployment) map[string]*appsv1beta.Deployment {
+	res := make(map[string]*appsv1beta.Deployment)
+	for _, d := range deployments {
+		res[d.Name] = d
+	}
+	return res
+}
+
+func findOrphans(deployments map[string]*appsv1beta.Deployment) []string {
+	var orphans []string
+	for _, d := range deployments {
+		if strings.HasSuffix(d.Name, "-gor") {
+			_, ok := deployments[strings.TrimSuffix(d.Name, "-gor")]
+			if !ok {
+				orphans = append(orphans, d.Name)
+			}
+		}
+	}
+	return orphans
+}
+
 func (bc *HarvesterController) Reconcile(k types.ReconcileKey) error {
 	log.Printf("running reconcile Harvester for %s", k.Name)
 	h, err := bc.Get(k.Namespace, k.Name)
@@ -71,6 +93,18 @@ func (bc *HarvesterController) Reconcile(k types.ReconcileKey) error {
 	if err != nil {
 		return err
 	}
+	deploysMap := arrayToMap(deploys)
+	orphans := findOrphans(deploysMap)
+	propagationPolicy := metav1.DeletePropagationBackground
+	for _, orph := range orphans {
+		err = bc.kubernetesclient.ExtensionsV1beta1().Deployments(k.Namespace).Delete(
+			orph, &metav1.DeleteOptions{PropagationPolicy: &propagationPolicy})
+		if err != nil {
+			log.Printf("failed to delete shadow deployment %s: %v", orph, err)
+		}
+
+	}
+
 	var forceReconcile bool
 	if h.Spec.SegmentSize != h.Status.SegmentSize {
 		forceReconcile = true
@@ -133,7 +167,6 @@ func (bc *HarvesterController) Reconcile(k types.ReconcileKey) error {
 	}
 
 	log.Printf("Finished processing harvester...")
-
 	return nil
 }
 

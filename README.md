@@ -40,7 +40,7 @@ $ go run cmd/controller-manager/main.go --kubeconfig=~/.kube/config
 $ go run cmd/initializer-controller/main.go --kubeconfig=~/.kube/config
 
 # add initializer config
-$ kubect create -f sample/initializer-configuration.yaml
+$ kubectl create -f sample/initializer-configuration.yaml
 
 # create harvester, refinery and test deployment
 $ kubectl create -f sample/harvester.yaml
