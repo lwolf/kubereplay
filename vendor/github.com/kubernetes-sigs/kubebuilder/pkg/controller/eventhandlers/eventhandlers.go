@@ -88,8 +88,17 @@ func (mp MapAndEnqueue) addRateLimited(r workqueue.RateLimitingInterface, obj in
 	}
 }
 
+// ControllerLookup takes a ReconcileKey and returns the matching resource
 type ControllerLookup func(types.ReconcileKey) (interface{}, error)
 
+// Path is list of functions that allow an instance of a resource to be traced back to an owning ancestor.  This
+// is done by following the chain of owners references and comparing the UID in the owners reference against
+// the UID of the instance returned by ControllerLookup.
+// e.g. if resource Foo creates Deployments, and wanted to trigger reconciles in response to Pod events created by
+// the Deployment, then Path would contain the following [function to lookup a ReplicaSet by namespace/name,
+// function to lookup a Deployment by namespace/name, function to lookup a Foo by namespace/name].  When
+// a Pod event is observed, this Path could then walk the owners references back to the Foo to get its namespace/name
+// and then reconcile this Foo.
 type Path []ControllerLookup
 
 type MapToController struct {
@@ -118,29 +127,32 @@ func (m MapToController) Map(obj interface{}) string {
 	o := object
 	for len(m.Path) > 0 {
 		// Get the owner reference
-		if ownerRef := metav1.GetControllerOf(o); ownerRef != nil {
-			// Resolve the owner object and check if the UID of the looked up object matches the reference.
-			owner, err := m.Path[0](types.ReconcileKey{Name: ownerRef.Name, Namespace: o.GetNamespace()})
-			if err != nil || owner == nil {
-				glog.V(2).Infof("Could not lookup owner %v %v", owner, err)
-				return ""
-			}
-			var ownerObject metav1.Object
-			if ownerObject, ok = owner.(metav1.Object); !ok {
-				glog.V(2).Infof("No ObjectMeta for owner %v %v", owner, err)
-				return ""
-			}
-			if ownerObject.GetUID() != ownerRef.UID {
-				return ""
-			}
+		ownerRef := metav1.GetControllerOf(o)
+		if ownerRef == nil {
+			glog.V(2).Infof("object %v does not have any owner reference", o)
+			return ""
+		}
+		// Resolve the owner object and check if the UID of the looked up object matches the reference.
+		owner, err := m.Path[0](types.ReconcileKey{Name: ownerRef.Name, Namespace: o.GetNamespace()})
+		if err != nil || owner == nil {
+			glog.V(2).Infof("Could not lookup owner %v %v", owner, err)
+			return ""
+		}
+		var ownerObject metav1.Object
+		if ownerObject, ok = owner.(metav1.Object); !ok {
+			glog.V(2).Infof("No ObjectMeta for owner %v %v", owner, err)
+			return ""
+		}
+		if ownerObject.GetUID() != ownerRef.UID {
+			return ""
+		}
 
-			// Pop the path element or return the value
-			if len(m.Path) > 1 {
-				o = ownerObject
-				m.Path = m.Path[1:]
-			} else {
-				return object.GetNamespace() + "/" + ownerRef.Name
-			}
+		// Pop the path element or return the value
+		if len(m.Path) > 1 {
+			o = ownerObject
+			m.Path = m.Path[1:]
+		} else {
+			return object.GetNamespace() + "/" + ownerRef.Name
 		}
 	}
 	return ""
