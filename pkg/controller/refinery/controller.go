@@ -123,7 +123,7 @@ type RefineryController struct {
 	refineryLister   kubereplayv1alpha1lister.RefineryLister
 	refineryclient   kubereplayv1alpha1client.KubereplayV1alpha1Interface
 	deploymentLister appsv1lister.DeploymentLister
-	kubernetesclient *kubernetes.Clientset
+	kubernetesclient kubernetes.Interface
 
 	recorder record.EventRecorder
 }
