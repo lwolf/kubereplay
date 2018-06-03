@@ -17,6 +17,7 @@ import (
 	kubereplayv1alpha1lister "github.com/lwolf/kubereplay/pkg/client/listers/kubereplay/v1alpha1"
 	"k8s.io/api/apps/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -40,6 +41,8 @@ var (
 	kubeconfig      string
 )
 
+var harvesterGVK = v1alpha1.SchemeGroupVersion.WithKind("Harvester")
+
 func GenerateSidecar(refinerySvc string, port uint32) *corev1.Container {
 	return &corev1.Container{
 		Name:  "goreplay",
@@ -50,10 +53,16 @@ func GenerateSidecar(refinerySvc string, port uint32) *corev1.Container {
 			"--output-tcp",
 			fmt.Sprintf("%s:28020", refinerySvc),
 		},
-		//Resources: apiv1.ResourceRequirements{
-		//	Limits: apiv1.ResourceList{},
-		//	Requests: apiv1.ResourceList{},
-		//},
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("10m"),
+				corev1.ResourceMemory: resource.MustParse("64Mi"),
+			},
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("10m"),
+				corev1.ResourceMemory: resource.MustParse("64Mi"),
+			},
+		},
 	}
 }
 
@@ -116,21 +125,14 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 				return nil
 			}
 
-			ownerReferences := []metav1.OwnerReference{
-				{
-					Name:       harvester.Name,
-					UID:        harvester.UID,
-					Kind:       "Harvester",
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
-				},
-			}
-
 			initializedDeploymentBlue := &v1beta1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
-					OwnerReferences: ownerReferences,
-					Name:            fmt.Sprintf("%s-gor", deployment.Name),
-					Namespace:       deployment.Namespace,
-					Labels:          deployment.ObjectMeta.Labels,
+					OwnerReferences: []metav1.OwnerReference{
+						*metav1.NewControllerRef(harvester, harvesterGVK),
+					},
+					Name:      fmt.Sprintf("%s-gor", deployment.Name),
+					Namespace: deployment.Namespace,
+					Labels:    deployment.ObjectMeta.Labels,
 				},
 				Spec: *deployment.Spec.DeepCopy(),
 			}
@@ -151,7 +153,6 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 			greenAnnotations[helpers.AnnotationKeyDefault] = helpers.AnnotationValueSkip
 			greenAnnotations[helpers.AnnotationKeyReplicas] = strconv.Itoa(int(greenReplicas))
 			greenAnnotations[helpers.AnnotationKeyShadow] = initializedDeploymentBlue.Name
-			initializedDeploymentGreen.ObjectMeta.OwnerReferences = ownerReferences
 			initializedDeploymentGreen.Annotations = greenAnnotations
 			initializedDeploymentGreen.Spec.Replicas = &greenReplicas
 
@@ -162,7 +163,6 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 			blueAnnotations[helpers.AnnotationKeyDefault] = helpers.AnnotationValueCapture
 			blueAnnotations[helpers.AnnotationKeyReplicas] = strconv.Itoa(int(blueReplicas))
 			blueAnnotations[helpers.AnnotationKeyShadow] = initializedDeploymentGreen.Name
-			initializedDeploymentBlue.ObjectMeta.OwnerReferences = ownerReferences
 			initializedDeploymentBlue.Annotations = blueAnnotations
 			initializedDeploymentBlue.Spec.Replicas = &blueReplicas
 			initializedDeploymentBlue.Status = v1beta1.DeploymentStatus{}
