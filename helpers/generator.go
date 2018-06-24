@@ -210,7 +210,7 @@ func argsFromSpec(spec *kubereplayv1alpha1.RefinerySpec) *[]string {
 	}
 
 	if spec.Timeout != "" {
-		args = append(args, "-output-http-timeout")
+		args = append(args, "--output-http-timeout")
 		args = append(args, spec.Timeout)
 	}
 	return &args
