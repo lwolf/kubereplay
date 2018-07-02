@@ -6,13 +6,13 @@ spec:
   # Gor uses dynamic worker scaling by default.  Enter a number to run a set number of workers.
   # number > 0 indicates static value
   workers: 1  # -output-http-workers int
-  # Specify HTTP request/response timeout. By default 5s. Example: --output-http-timeout 30s (default 5s)
+  # Specify HTTP request/response timeout. By default 5s. Example: -output-http-timeout 30s (default 5s)
   timeout: "5s" # -output-http-timeout duration
   output:
     file:
       enabled: false
       # Write incoming requests to file
-      filename: "test.log"  # -output-file value
+      filename: "/tmp/test.log"  # -output-file value
 
       # The flushed chunk is appended to existence file or not.
       append: true  # -output-file-append
@@ -31,7 +31,7 @@ spec:
       # Used for internal communication between Gor instances. Example:
       uri: "replay.kubernetes:28020" # -output-tcp value
 
-    stdout: # --output-stdout
+    stdout: # -output-stdout
       enabled: true
 
     http:
@@ -52,7 +52,7 @@ spec:
 
     kafka:
       enabled: false
-      # Read request and response stats from Kafka:
+      # Send requests to Kafka:
       uri: "192.168.0.1:9092,192.168.0.2:9092" # -output-kafka-host string
 
       # If turned on, it will serialize messages from GoReplay text format to JSON.

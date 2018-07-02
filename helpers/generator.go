@@ -24,25 +24,25 @@ func fileSiloToArgs(spec *kubereplayv1alpha1.FileSilo) (*[]string, error) {
 	if spec.Filename == "" {
 		return nil, errors.New("filename is required for file output mode")
 	} else {
-		args = append(args, "--output-file")
+		args = append(args, "-output-file")
 		args = append(args, spec.Filename)
 	}
 	if spec.Append == true {
-		args = append(args, "--output-file-append")
+		args = append(args, "-output-file-append")
 	}
 
 	if spec.FlushInterval != "" {
-		args = append(args, "--output-file-flush-interval")
+		args = append(args, "-output-file-flush-interval")
 		args = append(args, spec.FlushInterval)
 	}
 
 	if spec.QueueSize > 0 {
-		args = append(args, "--output-file-queue-limit")
+		args = append(args, "-output-file-queue-limit")
 		args = append(args, fmt.Sprint(spec.QueueSize))
 	}
 
 	if spec.FileLimit != "" {
-		args = append(args, "--output-file-size-limit")
+		args = append(args, "-output-file-size-limit")
 		args = append(args, spec.FileLimit)
 	}
 
@@ -54,14 +54,14 @@ func tcpSiloToArgs(spec *kubereplayv1alpha1.TcpSilo) (*[]string, error) {
 	if spec.Uri == "" {
 		return nil, errors.New("uri is required for tcp output mode")
 	}
-	args = append(args, "--output-tcp")
+	args = append(args, "-output-tcp")
 	args = append(args, spec.Uri)
 	return &args, nil
 }
 
 func stdoutSiloToArgs(spec *kubereplayv1alpha1.StdoutSilo) (*[]string, error) {
 	var args []string
-	args = append(args, "--output-stdout")
+	args = append(args, "-output-stdout")
 	return &args, nil
 }
 
@@ -70,15 +70,15 @@ func httpSiloToArgs(spec *kubereplayv1alpha1.HttpSilo) (*[]string, error) {
 	if spec.Uri == "" {
 		return nil, errors.New("uri is required for http output mode")
 	}
-	args = append(args, "--output-http")
+	args = append(args, "-output-http")
 	args = append(args, spec.Uri)
 
 	if spec.Debug == true {
-		args = append(args, "--output-http-debug")
+		args = append(args, "-output-http-debug")
 	}
 
 	if spec.ResponseBuffer > 0 {
-		args = append(args, "--output-http-response-buffer")
+		args = append(args, "-output-http-response-buffer")
 		args = append(args, strconv.Itoa(spec.ResponseBuffer))
 	}
 
@@ -90,7 +90,7 @@ func elasticsearchSiloToArgs(spec *kubereplayv1alpha1.ElasticsearchSilo) (*[]str
 	if spec.Uri == "" {
 		return nil, errors.New("uri is required for elasticsearch output mode")
 	}
-	args = append(args, "--output-http-elasticsearch")
+	args = append(args, "-output-http-elasticsearch")
 	args = append(args, spec.Uri)
 
 	return &args, nil
@@ -101,15 +101,15 @@ func kafkaSiloToArgs(spec *kubereplayv1alpha1.KafkaSilo) (*[]string, error) {
 	if spec.Uri == "" {
 		return nil, errors.New("uri is required for kafka output mode")
 	}
-	args = append(args, "--output-kafka-host")
+	args = append(args, "-output-kafka-host")
 	args = append(args, spec.Uri)
 
 	if spec.Json == true {
-		args = append(args, "--output-kafka-json-format")
+		args = append(args, "-output-kafka-json-format")
 	}
 
 	if spec.Topic != "" {
-		args = append(args, "--output-kafka-topic")
+		args = append(args, "-output-kafka-topic")
 		args = append(args, spec.Topic)
 	}
 
@@ -148,7 +148,7 @@ func GenerateService(name string, spec *kubereplayv1alpha1.RefinerySpec) *apiv1.
 func argsFromSpec(spec *kubereplayv1alpha1.RefinerySpec) *[]string {
 	var args []string
 	// Confugure input arguments
-	args = append(args, "--input-tcp")
+	args = append(args, "-input-tcp")
 	args = append(args, ":28020")
 
 	if spec.Storage.File != nil && spec.Storage.File.Enabled == true {
@@ -205,12 +205,12 @@ func argsFromSpec(spec *kubereplayv1alpha1.RefinerySpec) *[]string {
 	}
 
 	if spec.Workers > 0 {
-		args = append(args, "--output-http-workers")
+		args = append(args, "-output-http-workers")
 		args = append(args, fmt.Sprint(spec.Workers))
 	}
 
 	if spec.Timeout != "" {
-		args = append(args, "--output-http-timeout")
+		args = append(args, "-output-http-timeout")
 		args = append(args, spec.Timeout)
 	}
 	return &args
@@ -272,3 +272,4 @@ func GenerateDeployment(name string, r *kubereplayv1alpha1.Refinery) *appsv1.Dep
 }
 
 func int32Ptr(i int32) *int32 { return &i }
+func int64Ptr(i int64) *int64 { return &i }

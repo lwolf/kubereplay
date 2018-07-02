@@ -182,4 +182,6 @@ revision="f53464b8b84b4507805a0b033a8377b225163fea"
 name = "github.com/kubernetes-sigs/kubebuilder"
 version="0.1.10"
 
-
+[[constraint]]
+  name = "github.com/google/go-cmp"
+  version = "0.2.0"
