@@ -185,3 +185,7 @@ version="0.1.10"
 [[constraint]]
   name = "github.com/google/go-cmp"
   version = "0.2.0"
+
+[[constraint]]
+  name = "github.com/go-test/deep"
+  version = "v1.0.1"
