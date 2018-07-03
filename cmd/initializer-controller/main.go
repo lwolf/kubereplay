@@ -48,9 +48,9 @@ func GenerateSidecar(refinerySvc string, port uint32) *corev1.Container {
 		Name:  "goreplay",
 		Image: "buger/goreplay:latest",
 		Args: []string{
-			"--input-raw",
+			"-input-raw",
 			fmt.Sprintf(":%d", port),
-			"--output-tcp",
+			"-output-tcp",
 			fmt.Sprintf("%s:28020", refinerySvc),
 		},
 		Resources: corev1.ResourceRequirements{
@@ -125,17 +125,11 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 				return nil
 			}
 
-			initializedDeploymentBlue := &v1beta1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					OwnerReferences: []metav1.OwnerReference{
-						*metav1.NewControllerRef(harvester, harvesterGVK),
-					},
-					Name:      fmt.Sprintf("%s-gor", deployment.Name),
-					Namespace: deployment.Namespace,
-					Labels:    deployment.ObjectMeta.Labels,
-				},
-				Spec: *deployment.Spec.DeepCopy(),
+			initializedDeploymentBlue := helpers.CleanupDeployment(deployment)
+			initializedDeploymentBlue.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
+				*metav1.NewControllerRef(harvester, harvesterGVK),
 			}
+			initializedDeploymentBlue.ObjectMeta.Name = fmt.Sprintf("%s-gor", deployment.Name)
 
 			//Remove self from the list of pending Initializers while preserving ordering.
 			if len(pendingInitializers) == 1 {
@@ -181,7 +175,7 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 
 			// Modify the Deployment's Pod template to include the Gor container
 			initializedDeploymentBlue.Spec.Template.Spec.Containers = append(deployment.Spec.Template.Spec.Containers, *sidecar)
-			// Creating new deployment in a gorouting, otherwise it will block and timeout
+			// Creating new deployment in a go routine, otherwise it will block and timeout
 			go createShadowDeployment(initializedDeploymentBlue, clientset)
 
 		}
