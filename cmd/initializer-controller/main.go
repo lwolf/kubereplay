@@ -162,7 +162,7 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 			initializedDeploymentBlue.Status = v1beta1.DeploymentStatus{}
 
 			sidecar := GenerateSidecar(
-				fmt.Sprintf("refinery-%s.default", harvester.Spec.Refinery),
+				fmt.Sprintf("refinery-%s.%s", harvester.Spec.Refinery, harvester.Namespace),
 				// todo: remove port from harvester spec, get it directly from deployment
 				harvester.Spec.AppPort,
 			)
