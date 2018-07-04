@@ -3,15 +3,17 @@ package main
 import (
 	"flag"
 	"log"
-
 	// Import auth/gcp to connect to GKE clusters remotely
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"net/http"
+	"time"
 
+	"github.com/heptiolabs/healthcheck"
 	configlib "github.com/kubernetes-sigs/kubebuilder/pkg/config"
 	"github.com/kubernetes-sigs/kubebuilder/pkg/inject/run"
 	"github.com/kubernetes-sigs/kubebuilder/pkg/install"
 	"github.com/kubernetes-sigs/kubebuilder/pkg/signals"
 	extensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"github.com/lwolf/kubereplay/pkg/inject"
 	"github.com/lwolf/kubereplay/pkg/inject/args"
@@ -32,6 +34,12 @@ func main() {
 			log.Fatalf("Could not create CRDs: %v", err)
 		}
 	}
+
+	health := healthcheck.NewHandler()
+	health.AddReadinessCheck(
+		"upstream-dns",
+		healthcheck.DNSResolveCheck("kubernetes.default", 50*time.Millisecond))
+	go http.ListenAndServe("0.0.0.0:8086", health)
 
 	// Start the controllers
 	if err := inject.RunAll(run.RunArguments{Stop: stopCh}, args.CreateInjectArgs(config)); err != nil {

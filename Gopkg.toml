@@ -189,3 +189,7 @@ version="0.1.10"
 [[constraint]]
   name = "github.com/go-test/deep"
   version = "v1.0.1"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/heptiolabs/healthcheck"

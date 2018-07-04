@@ -6,15 +6,12 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"syscall"
 	"time"
 
-	"github.com/lwolf/kubereplay/helpers"
-	"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
-	"github.com/lwolf/kubereplay/pkg/client/clientset/versioned"
-	"github.com/lwolf/kubereplay/pkg/client/informers/externalversions"
-	kubereplayv1alpha1lister "github.com/lwolf/kubereplay/pkg/client/listers/kubereplay/v1alpha1"
+	"github.com/heptiolabs/healthcheck"
 	"k8s.io/api/apps/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -27,7 +24,13 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
-	"path/filepath"
+
+	"github.com/lwolf/kubereplay/helpers"
+	"github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
+	"github.com/lwolf/kubereplay/pkg/client/clientset/versioned"
+	"github.com/lwolf/kubereplay/pkg/client/informers/externalversions"
+	kubereplayv1alpha1lister "github.com/lwolf/kubereplay/pkg/client/listers/kubereplay/v1alpha1"
+	"net/http"
 )
 
 const (
@@ -205,6 +208,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	health := healthcheck.NewHandler()
+	health.AddReadinessCheck(
+		"upstream-dns",
+		healthcheck.DNSResolveCheck("kubernetes.default", 50*time.Millisecond))
+	go http.ListenAndServe("0.0.0.0:8086", health)
 
 	// Watch uninitialized Deployments in all namespaces.
 	restClient := clientset.AppsV1beta1().RESTClient()
