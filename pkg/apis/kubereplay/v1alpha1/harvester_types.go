@@ -1,15 +1,18 @@
 package v1alpha1
 
 import (
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // HarvesterSpec defines the desired state of Harvester
 type HarvesterSpec struct {
-	Selector    map[string]string `json:"selector,omitempty"`
-	AppPort     uint32            `json:"app_port,omitempty"`
-	Refinery    string            `json:"refinery,omitempty"`
-	SegmentSize uint32            `json:"segment,omitempty"`
+	Selector    map[string]string        `json:"selector,omitempty"`
+	AppPort     uint32                   `json:"app_port,omitempty"`
+	Refinery    string                   `json:"refinery,omitempty"`
+	SegmentSize uint32                   `json:"segment,omitempty"`
+	Goreplay    *GoreplayImage           `json:"goreplay,omitempty"`
+	Resources   *v1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // HarvesterStatus defines the observed state of Harvester

@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -11,9 +12,17 @@ import (
 
 // RefinerySpec defines the desired state of Refinery
 type RefinerySpec struct {
-	Workers int32            `json:"workers,omitempчty"`
-	Timeout string           `json:"timeout,omitempty"`
-	Storage *RefineryStorage `json:"output,omitempty"`
+	Workers   int32                    `json:"workers,omitempty"`
+	Timeout   string                   `json:"timeout,omitempty"`
+	Storage   *RefineryStorage         `json:"output,omitempty"`
+	Goreplay  *GoreplayImage           `json:"goreplay,omitempty"`
+	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
+}
+
+type GoreplayImage struct {
+	Image            string                    `json:"image,omitempty"`
+	ImagePullPolicy  v1.PullPolicy             `json:"image_pull_policy,omitempty"`
+	ImagePullSecrets []v1.LocalObjectReference `json:"image_pull_secrets,omitempty"`
 }
 
 // RefineryStatus defines various storages available for Refinery
@@ -30,7 +39,7 @@ type FileSilo struct {
 	Enabled       bool   `json:"enabled,omitempty"`
 	Filename      string `json:"filename,omitempty"`
 	Append        bool   `json:"append,omitempty"`
-	FlushInterval string `json:"flushinterval,omitempty"`
+	FlushInterval string `json:"flush_interval,omitempty"`
 	QueueSize     int32  `json:"queuesize,omitempty"`
 	FileLimit     string `json:"filelimit,omitempty"`
 }

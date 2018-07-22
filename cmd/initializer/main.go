@@ -13,6 +13,7 @@ import (
 
 	"github.com/heptiolabs/healthcheck"
 	"k8s.io/api/apps/v1beta1"
+	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,17 +47,25 @@ var (
 
 var harvesterGVK = v1alpha1.SchemeGroupVersion.WithKind("Harvester")
 
-func GenerateSidecar(refinerySvc string, port uint32) *corev1.Container {
-	return &corev1.Container{
-		Name:  "goreplay",
-		Image: "buger/goreplay:latest",
-		Args: []string{
-			"-input-raw",
-			fmt.Sprintf(":%d", port),
-			"-output-tcp",
-			fmt.Sprintf("%s:28020", refinerySvc),
-		},
-		Resources: corev1.ResourceRequirements{
+func GenerateSidecar(refinerySvc string, hs v1alpha1.HarvesterSpec) *corev1.Container {
+	var image string
+	var imagePullPolicy apiv1.PullPolicy
+	var resources corev1.ResourceRequirements
+
+	if hs.Goreplay != nil && hs.Goreplay.Image != "" {
+		image = hs.Goreplay.Image
+	} else {
+		image = "buger/goreplay:latest"
+	}
+	if hs.Goreplay != nil && hs.Goreplay.ImagePullPolicy != "" {
+		imagePullPolicy = hs.Goreplay.ImagePullPolicy
+	} else {
+		imagePullPolicy = apiv1.PullAlways
+	}
+	if hs.Resources != nil {
+		resources = *hs.Resources
+	} else {
+		resources = corev1.ResourceRequirements{
 			Requests: corev1.ResourceList{
 				corev1.ResourceCPU:    resource.MustParse("10m"),
 				corev1.ResourceMemory: resource.MustParse("64Mi"),
@@ -65,7 +74,20 @@ func GenerateSidecar(refinerySvc string, port uint32) *corev1.Container {
 				corev1.ResourceCPU:    resource.MustParse("10m"),
 				corev1.ResourceMemory: resource.MustParse("64Mi"),
 			},
+		}
+	}
+
+	return &corev1.Container{
+		Name:            "goreplay",
+		Image:           image,
+		ImagePullPolicy: imagePullPolicy,
+		Args: []string{
+			"-input-raw",
+			fmt.Sprintf(":%d", hs.AppPort),
+			"-output-tcp",
+			fmt.Sprintf("%s:28020", refinerySvc),
 		},
+		Resources: resources,
 	}
 }
 
@@ -167,7 +189,7 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 			sidecar := GenerateSidecar(
 				fmt.Sprintf("refinery-%s.%s", harvester.Spec.Refinery, harvester.Namespace),
 				// todo: remove port from harvester spec, get it directly from deployment
-				harvester.Spec.AppPort,
+				harvester.Spec,
 			)
 
 			_, err = clientset.AppsV1beta1().Deployments(deployment.Namespace).Update(initializedDeploymentGreen)
@@ -177,6 +199,11 @@ func initializeDeployment(deployment *v1beta1.Deployment, clientset *kubernetes.
 			}
 
 			// Modify the Deployment's Pod template to include the Gor container
+			if harvester.Spec.Goreplay != nil && harvester.Spec.Goreplay.ImagePullSecrets != nil {
+				for _, ips := range harvester.Spec.Goreplay.ImagePullSecrets {
+					initializedDeploymentBlue.Spec.Template.Spec.ImagePullSecrets = append(initializedDeploymentBlue.Spec.Template.Spec.ImagePullSecrets, ips)
+				}
+			}
 			initializedDeploymentBlue.Spec.Template.Spec.Containers = append(deployment.Spec.Template.Spec.Containers, *sidecar)
 			// Creating new deployment in a go routine, otherwise it will block and timeout
 			go createShadowDeployment(initializedDeploymentBlue, clientset)

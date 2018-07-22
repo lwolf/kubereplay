@@ -14,3 +14,9 @@ spec:
     module: test
   # Name of the Refinery to send traffic to
   refinery: "refinery-example"
+
+  goreplay:
+    image: buger/goreplay:latest
+    image_pull_policy: Never
+    image_pull_secrets: []
+  resources: {}

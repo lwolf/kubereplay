@@ -10,7 +10,9 @@ project_name: kubereplay
 
 builds:
   - binary: kubereplay-controller
-    main: ./cmd/controller-manager/main.go
+    main: ./cmd/controller/main.go
+    env:
+    - CGO_ENABLED=0
     goos:
 #      - darwin
       - linux
@@ -27,7 +29,9 @@ builds:
 #      - goos: darwin
 #        goarch: arm64
   - binary: kubereplay-initializer
-    main: ./cmd/initializer-controller/main.go
+    main: ./cmd/initializer/main.go
+    env:
+    - CGO_ENABLED=0
     goos:
 #      - darwin
       - linux

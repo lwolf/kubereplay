@@ -8,16 +8,16 @@ Kubereplay aims to make integration of [Goreplay](https://github.com/buger/gorep
 
 # Current status
 
-This is an early alpha version. It is *not* meant to run in production.
+This is an early alpha version. It is *not* meant to run in production yet.
 
 # About
 
-Kubereplay is Kubernetes add-on to automate capturing and redirection of traffic using [Goreplay](https://github.com/buger/goreplay).
-It consist of 2 parts that need to run in the cluster - controller-manager and initializer-controller.
+Kubereplay is a Kubernetes add-on to automate capturing and redirection of traffic using [Goreplay](https://github.com/buger/goreplay).
+It consist of 2 parts that need to run in the cluster - controller and initializer.
 
 ## How it works:
 
-Kubereplay creates and manage 2 CRDs: Harvesters and Refineries.
+Kubereplay creates and manages 2 CRDs: Harvesters and Refineries.
 
 Refinery - is responsible for managing dedicated GoReplay deployment used for receiving data from workloads (harvesters).
  It listens to traffic on tcp socket and then sends it to configured output (stdout, elasticsearch, kafka, http).

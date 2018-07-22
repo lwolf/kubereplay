@@ -9,6 +9,8 @@ import (
 	kubereplayv1alpha1 "github.com/lwolf/kubereplay/pkg/apis/kubereplay/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1beta2"
 	apiv1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -123,11 +125,11 @@ func mergeArgs(newArgs []string, args []string) []string {
 	return args
 }
 
-func GenerateService(name string, spec *kubereplayv1alpha1.RefinerySpec) *apiv1.Service {
+func GenerateService(name string, namespace string, spec *kubereplayv1alpha1.RefinerySpec) *apiv1.Service {
 	return &apiv1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("refinery-%s", name),
-			Namespace: "default",
+			Namespace: namespace,
 			Labels:    AppLabels(name),
 		},
 		Spec: apiv1.ServiceSpec{
@@ -220,6 +222,11 @@ func GenerateDeployment(name string, r *kubereplayv1alpha1.Refinery) *appsv1.Dep
 	if &r.Spec == nil || r.Spec.Storage == nil {
 		return nil
 	}
+	var imagePullSecrets []corev1.LocalObjectReference
+	var image string
+	var imagePullPolicy apiv1.PullPolicy
+	var resources corev1.ResourceRequirements
+
 	args := argsFromSpec(&r.Spec)
 
 	ownerReferences := []metav1.OwnerReference{
@@ -229,6 +236,33 @@ func GenerateDeployment(name string, r *kubereplayv1alpha1.Refinery) *appsv1.Dep
 			Kind:       "Refinery",
 			APIVersion: kubereplayv1alpha1.SchemeGroupVersion.String(),
 		},
+	}
+	if r.Spec.Goreplay != nil && r.Spec.Goreplay.ImagePullSecrets != nil {
+		imagePullSecrets = r.Spec.Goreplay.ImagePullSecrets
+	}
+	if r.Spec.Goreplay != nil && r.Spec.Goreplay.Image != "" {
+		image = r.Spec.Goreplay.Image
+	} else {
+		image = "buger/goreplay:latest"
+	}
+	if r.Spec.Goreplay != nil && r.Spec.Goreplay.ImagePullPolicy != "" {
+		imagePullPolicy = r.Spec.Goreplay.ImagePullPolicy
+	} else {
+		imagePullPolicy = apiv1.PullAlways
+	}
+	if r.Spec.Resources != nil {
+		resources = *r.Spec.Resources
+	} else {
+		resources = corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("10m"),
+				corev1.ResourceMemory: resource.MustParse("64Mi"),
+			},
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("10m"),
+				corev1.ResourceMemory: resource.MustParse("64Mi"),
+			},
+		}
 	}
 
 	deployment := &appsv1.Deployment{
@@ -248,11 +282,13 @@ func GenerateDeployment(name string, r *kubereplayv1alpha1.Refinery) *appsv1.Dep
 					Labels: AppLabels(name),
 				},
 				Spec: apiv1.PodSpec{
+					ImagePullSecrets: imagePullSecrets,
 					Containers: []apiv1.Container{
 						{
-							Name:  "goreplay",
-							Image: "buger/goreplay:latest",
-							Args:  *args,
+							Name:            "goreplay",
+							Image:           image,
+							ImagePullPolicy: imagePullPolicy,
+							Args:            *args,
 							Ports: []apiv1.ContainerPort{
 								{
 									Name:          "tcp",
@@ -260,6 +296,7 @@ func GenerateDeployment(name string, r *kubereplayv1alpha1.Refinery) *appsv1.Dep
 									ContainerPort: 28020,
 								},
 							},
+							Resources: resources,
 						},
 					},
 				},

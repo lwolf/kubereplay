@@ -39,7 +39,7 @@ spec:
       # Used for internal communication between Gor instances. Example:
       uri: "replay.kubernetes:28020" # -output-tcp value
 
-    stdout: # --output-stdout
+    stdout: # -output-stdout
       enabled: true
 
     http:

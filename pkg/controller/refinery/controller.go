@@ -50,7 +50,7 @@ func (bc *RefineryController) Reconcile(k types.ReconcileKey) error {
 	}
 
 	sClient := bc.kubernetesclient.CoreV1().Services(r.Namespace)
-	service := helpers.GenerateService(r.Name, &r.Spec)
+	service := helpers.GenerateService(r.Name, r.Namespace, &r.Spec)
 	_, err = sClient.Get(service.Name, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		_, err := sClient.Create(service)
